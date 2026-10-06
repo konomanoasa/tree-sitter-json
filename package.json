@@ -1,6 +1,6 @@
 {
   "name": "@konomanoasa/tree-sitter-json",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Tree-sitter grammars for JSON and JSONC.",
   "license": "MIT",
