@@ -1,0 +1,50 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "json",
+      "title": "JSON",
+      "scope": "source.json",
+      "path": ".",
+      "file-types": ["json"],
+      "injection-regex": "^json$",
+      "highlights": "queries/highlights.scm",
+      "external-files": ["common/scanner.h"]
+    },
+    {
+      "name": "jsonc",
+      "title": "JSON with comments",
+      "scope": "source.jsonc",
+      "path": "jsonc",
+      "file-types": ["jsonc"],
+      "injection-regex": "^jsonc$",
+      "highlights": ["queries/highlights.scm", "jsonc/queries/highlights.scm"],
+      "external-files": ["common/scanner.h"]
+    },
+    {
+      "name": "jsonc_trailing",
+      "title": "JSON with comments and trailing commas",
+      "scope": "source.jsonc.trailing",
+      "path": "jsonc_trailing",
+      "injection-regex": "^jsonc_trailing$",
+      "highlights": ["queries/highlights.scm", "jsonc/queries/highlights.scm"],
+      "external-files": ["common/scanner.h"]
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "Tree-sitter grammars for JSON and JSONC.",
+    "links": {
+      "repository": "https://github.com/konomanoasa/tree-sitter-json"
+    }
+  },
+  "bindings": {
+    "c": false,
+    "go": false,
+    "node": false,
+    "python": false,
+    "rust": true,
+    "swift": false
+  }
+}

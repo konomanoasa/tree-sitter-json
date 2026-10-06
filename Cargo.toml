@@ -1,0 +1,44 @@
+[package]
+name = "konomanoasa-tree-sitter-json"
+version = "0.1.0"
+edition = "2024"
+description = "Tree-sitter grammars for JSON and JSONC."
+readme = "README.md"
+repository = "https://github.com/konomanoasa/tree-sitter-json"
+license = "MIT"
+build = "bindings/rust/build.rs"
+links = "tree-sitter-json"
+include = [
+  "/LICENSE",
+  "/README.md",
+  "/bindings/rust/*.rs",
+  "/common/*.h",
+  "/jsonc/queries/*.scm",
+  "/jsonc/src/*.c",
+  "/jsonc/src/node-types.json",
+  "/jsonc/src/tree_sitter/*.h",
+  "/jsonc_trailing/src/*.c",
+  "/jsonc_trailing/src/node-types.json",
+  "/jsonc_trailing/src/tree_sitter/*.h",
+  "/queries/*.scm",
+  "/src/*.c",
+  "/src/node-types.json",
+  "/src/tree_sitter/*.h",
+  "/test/bindings.test.rs",
+]
+
+[lib]
+path = "bindings/rust/lib.rs"
+
+[[test]]
+name = "bindings"
+path = "test/bindings.test.rs"
+
+[dependencies]
+tree-sitter-language = "0.1.8"
+
+[dev-dependencies]
+tree-sitter = "0.27.0"
+
+[build-dependencies]
+cc = "1.4"

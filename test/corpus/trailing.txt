@@ -1,0 +1,41 @@
+==================
+Trailing commas are normal source in nonempty containers
+:language(jsonc_trailing)
+==================
+{"a":[1,/*x*/],}
+---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        value: (value
+          (array
+            (value (number (int (digit1_9))))
+            (multi_line_comment (comment_text))))))))
+
+==================
+EOF after an object comma requires only its closing
+:language(jsonc_trailing)
+==================
+{"a":1,
+---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        value: (value (number (int (digit1_9)))))
+      issue: (syntax_issue (incomplete_syntax (missing_object_close))))))
+
+==================
+A second trailing comma remains an actual separator issue
+:language(jsonc_trailing)
+==================
+[1,,]
+---
+(json_text
+  (value
+    (array
+      (value (number (int (digit1_9))))
+      (syntax_issue (invalid_syntax (unexpected_separator))))))

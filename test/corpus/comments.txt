@@ -1,0 +1,67 @@
+==================
+Comments surround a single root value
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+// head
+1/* tail */
+---
+(json_text
+  (single_line_comment (comment_text))
+  (value (number (int (digit1_9))))
+  (multi_line_comment (comment_text)))
+
+==================
+Member and object own comments at their layout positions
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{/*o*/"a"/*n*/:/*v*/1/*t*/}
+---
+(json_text
+  (value
+    (object
+      (multi_line_comment (comment_text))
+      (member
+        name: (string (char (unescaped)))
+        (multi_line_comment (comment_text))
+        (multi_line_comment (comment_text))
+        value: (value (number (int (digit1_9)))))
+      (multi_line_comment (comment_text)))))
+
+==================
+Unfinished block comment keeps its text and EOF issue
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+1/* ]"content
+---
+(json_text
+  (value (number (int (digit1_9))))
+  (multi_line_comment
+    (comment_text)
+    (syntax_issue (incomplete_syntax (missing_comment_close)))))
+
+==================
+Comment after a trailing comma preserves the actual separator issue
+:language(jsonc)
+==================
+[1,/*x*/]
+---
+(json_text
+  (value
+    (array
+      (value (number (int (digit1_9))))
+      (syntax_issue (invalid_syntax (unexpected_separator)))
+      (multi_line_comment (comment_text)))))
+
+==================
+Unfinished comment opener stays outside the preceding number
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+1/
+---
+(json_text
+  (value (number (int (digit1_9))))
+  (syntax_issue (incomplete_syntax (invalid_comment))))

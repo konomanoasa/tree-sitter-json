@@ -1,0 +1,840 @@
+[
+  {
+    "type": "array",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "multi_line_comment",
+          "named": true
+        },
+        {
+          "type": "single_line_comment",
+          "named": true
+        },
+        {
+          "type": "value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "char",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "hexdig",
+          "named": true
+        },
+        {
+          "type": "unescaped",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "exp",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "digit",
+          "named": true
+        },
+        {
+          "type": "e",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "frac",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "digit",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "incomplete_syntax",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "invalid_comment",
+          "named": true
+        },
+        {
+          "type": "invalid_escape",
+          "named": true
+        },
+        {
+          "type": "invalid_value",
+          "named": true
+        },
+        {
+          "type": "missing_array_close",
+          "named": true
+        },
+        {
+          "type": "missing_comment_close",
+          "named": true
+        },
+        {
+          "type": "missing_digits",
+          "named": true
+        },
+        {
+          "type": "missing_member",
+          "named": true
+        },
+        {
+          "type": "missing_name_separator",
+          "named": true
+        },
+        {
+          "type": "missing_object_close",
+          "named": true
+        },
+        {
+          "type": "missing_string_close",
+          "named": true
+        },
+        {
+          "type": "missing_value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "int",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "digit",
+          "named": true
+        },
+        {
+          "type": "digit1_9",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "invalid_character",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "invalid_comment",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "invalid_encoding",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "invalid_escape",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "hexdig",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "invalid_member_name",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "invalid_number",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "digit",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "invalid_syntax",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "invalid_character",
+          "named": true
+        },
+        {
+          "type": "invalid_encoding",
+          "named": true
+        },
+        {
+          "type": "invalid_escape",
+          "named": true
+        },
+        {
+          "type": "invalid_member_name",
+          "named": true
+        },
+        {
+          "type": "invalid_number",
+          "named": true
+        },
+        {
+          "type": "invalid_value",
+          "named": true
+        },
+        {
+          "type": "missing_array_close",
+          "named": true
+        },
+        {
+          "type": "missing_digits",
+          "named": true
+        },
+        {
+          "type": "missing_member_name",
+          "named": true
+        },
+        {
+          "type": "missing_name_separator",
+          "named": true
+        },
+        {
+          "type": "missing_object_close",
+          "named": true
+        },
+        {
+          "type": "missing_string_close",
+          "named": true
+        },
+        {
+          "type": "missing_value",
+          "named": true
+        },
+        {
+          "type": "missing_value_separator",
+          "named": true
+        },
+        {
+          "type": "unexpected_separator",
+          "named": true
+        },
+        {
+          "type": "unexpected_value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "invalid_value",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "json_text",
+    "named": true,
+    "root": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "multi_line_comment",
+          "named": true
+        },
+        {
+          "type": "single_line_comment",
+          "named": true
+        },
+        {
+          "type": "value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "member",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "string",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "value",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "multi_line_comment",
+          "named": true
+        },
+        {
+          "type": "single_line_comment",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "missing_array_close",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "missing_comment_close",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "missing_digits",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "missing_member",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "missing_member_name",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "missing_name_separator",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "missing_object_close",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "missing_string_close",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "missing_value",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "missing_value_separator",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "multi_line_comment",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "comment_text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "number",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "exp",
+          "named": true
+        },
+        {
+          "type": "frac",
+          "named": true
+        },
+        {
+          "type": "int",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "object",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "member",
+          "named": true
+        },
+        {
+          "type": "multi_line_comment",
+          "named": true
+        },
+        {
+          "type": "single_line_comment",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "single_line_comment",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "comment_text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "string",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "char",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "syntax_issue",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "incomplete_syntax",
+          "named": true
+        },
+        {
+          "type": "invalid_syntax",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "unexpected_separator",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "unexpected_value",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "value",
+    "named": true,
+    "fields": {
+      "issue": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "syntax_issue",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "array",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "object",
+          "named": true
+        },
+        {
+          "type": "string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "\"",
+    "named": false
+  },
+  {
+    "type": "*/",
+    "named": false
+  },
+  {
+    "type": "+",
+    "named": false
+  },
+  {
+    "type": ",",
+    "named": false
+  },
+  {
+    "type": "-",
+    "named": false
+  },
+  {
+    "type": ".",
+    "named": false
+  },
+  {
+    "type": "/",
+    "named": false
+  },
+  {
+    "type": "/*",
+    "named": false
+  },
+  {
+    "type": "//",
+    "named": false
+  },
+  {
+    "type": "0",
+    "named": false
+  },
+  {
+    "type": ":",
+    "named": false
+  },
+  {
+    "type": "[",
+    "named": false
+  },
+  {
+    "type": "\\",
+    "named": false
+  },
+  {
+    "type": "]",
+    "named": false
+  },
+  {
+    "type": "b",
+    "named": false
+  },
+  {
+    "type": "comment_text",
+    "named": true
+  },
+  {
+    "type": "digit",
+    "named": true
+  },
+  {
+    "type": "digit1_9",
+    "named": true
+  },
+  {
+    "type": "e",
+    "named": true
+  },
+  {
+    "type": "f",
+    "named": false
+  },
+  {
+    "type": "false",
+    "named": false
+  },
+  {
+    "type": "hexdig",
+    "named": true
+  },
+  {
+    "type": "n",
+    "named": false
+  },
+  {
+    "type": "null",
+    "named": false
+  },
+  {
+    "type": "r",
+    "named": false
+  },
+  {
+    "type": "t",
+    "named": false
+  },
+  {
+    "type": "true",
+    "named": false
+  },
+  {
+    "type": "u",
+    "named": false
+  },
+  {
+    "type": "unescaped",
+    "named": true
+  },
+  {
+    "type": "{",
+    "named": false
+  },
+  {
+    "type": "}",
+    "named": false
+  }
+]

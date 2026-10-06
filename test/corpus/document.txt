@@ -1,0 +1,19 @@
+==================
+Empty array
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+[]
+---
+(json_text (value (array)))
+
+==================
+Unclosed array
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+[
+---
+(json_text (value (array (syntax_issue (incomplete_syntax (missing_array_close))))))

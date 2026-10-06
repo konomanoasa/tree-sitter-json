@@ -1,0 +1,303 @@
+==================
+Missing separators retain later values and members
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{"a": [1 true] "b" 2}
+---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        value: (value
+          (array
+            (value (number (int (digit1_9))))
+            issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+            (value))))
+      issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+      (member
+        name: (string (char (unescaped)))
+        issue: (syntax_issue (invalid_syntax (missing_name_separator)))
+        value: (value (number (int (digit1_9))))))))
+
+==================
+Missing member values preserve the following names and colons
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+[{"a":
+"b":1},{"a" "b":1},{"a": 1:2}]
+---
+(json_text
+  (value
+    (array
+      (value
+        (object
+          (member name: (string (char (unescaped)))
+            issue: (syntax_issue (invalid_syntax (missing_value))))
+          issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+          (member name: (string (char (unescaped)))
+            value: (value (number (int (digit1_9)))))))
+      (value
+        (object
+          (member name: (string (char (unescaped)))
+            issue: (syntax_issue (invalid_syntax (missing_name_separator)))
+            issue: (syntax_issue (invalid_syntax (missing_value))))
+          issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+          (member name: (string (char (unescaped)))
+            value: (value (number (int (digit1_9)))))))
+      (value
+        (object
+          (member name: (string (char (unescaped)))
+            issue: (syntax_issue (invalid_syntax (missing_value))))
+          issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+          (member
+            issue: (syntax_issue (invalid_syntax (invalid_member_name
+              (value (number (int (digit1_9)))))))
+            value: (value (number (int (digit1_9))))))))))
+
+==================
+Invalid names keep structured values
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{true: 1, []: null, raw: false, tru: true}
+---
+(json_text
+  (value
+    (object
+      (member
+        issue: (syntax_issue (invalid_syntax (invalid_member_name (value))))
+        value: (value (number (int (digit1_9)))))
+      (member
+        issue: (syntax_issue (invalid_syntax (invalid_member_name (value (array)))))
+        value: (value))
+      (member
+        issue: (syntax_issue (invalid_syntax (invalid_member_name)))
+        value: (value))
+      (member
+        issue: (syntax_issue (invalid_syntax (invalid_member_name)))
+        value: (value)))))
+
+==================
+Ancestor closing preserves the outer member
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{"a": [1}
+---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        value: (value
+          (array
+            (value (number (int (digit1_9))))
+            issue: (syntax_issue (invalid_syntax (missing_array_close)))))))))
+
+==================
+Unexpected values retain their normal structures
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{1} []
+---
+(json_text
+  (value
+    (object
+      issue: (syntax_issue
+        (invalid_syntax
+          (unexpected_value (value (number (int (digit1_9)))))))))
+  issue: (syntax_issue (invalid_syntax (unexpected_value (value (array))))))
+
+==================
+Duplicate and trailing commas are actual source
+:language(json)
+:language(jsonc)
+==================
+[1,,2,]
+---
+(json_text
+  (value
+    (array
+      (value (number (int (digit1_9))))
+      issue: (syntax_issue (invalid_syntax (unexpected_separator)))
+      (value (number (int (digit1_9))))
+      issue: (syntax_issue (invalid_syntax (unexpected_separator))))))
+
+==================
+Invalid number regions retain confirmed digits
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+[01, 0x12, 1.2.3, 1e2e3, +4]
+---
+(json_text
+  (value
+    (array
+      (value (number (int issue: (syntax_issue (invalid_syntax (invalid_number (digit)))))))
+      (value (number (int issue: (syntax_issue (invalid_syntax (invalid_number (digit) (digit)))))))
+      (value (number (int (digit1_9)) (frac (digit) issue: (syntax_issue (invalid_syntax (invalid_number))) (digit))))
+      (value (number (int (digit1_9)) (exp (e) (digit) issue: (syntax_issue (invalid_syntax (invalid_number))) (digit))))
+      (value (number issue: (syntax_issue (invalid_syntax (invalid_number))) (int (digit1_9)))))))
+
+==================
+Invalid escapes stop before a closing quote
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+"\q\u12"
+---
+(json_text
+  (value
+    (string
+      (char issue: (syntax_issue (invalid_syntax (invalid_escape))))
+      (char issue: (syntax_issue (invalid_syntax (invalid_escape (hexdig) (hexdig))))))))
+
+==================
+Incomplete escape and string closing are independent
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+"\u12
+---
+(json_text
+  (value
+    (string
+      (char issue: (syntax_issue (incomplete_syntax (invalid_escape (hexdig) (hexdig)))))
+      issue: (syntax_issue (incomplete_syntax (missing_string_close))))))
+
+==================
+EOF after an object comma requires a member and closing
+:language(json)
+:language(jsonc)
+==================
+{"a": 1,
+---
+(json_text
+  (value
+    (object
+      (member name: (string (char (unescaped))) value: (value (number (int (digit1_9)))))
+      issue: (syntax_issue (incomplete_syntax (missing_member)))
+      issue: (syntax_issue (incomplete_syntax (missing_object_close))))))
+
+==================
+EOF after a member name requires colon, value and closing
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{"a"
+---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        issue: (syntax_issue (incomplete_syntax (missing_name_separator)))
+        issue: (syntax_issue (incomplete_syntax (missing_value))))
+      issue: (syntax_issue (incomplete_syntax (missing_object_close))))))
+
+==================
+An incomplete literal is not a normal leaf
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+tru
+---
+(json_text (value issue: (syntax_issue (incomplete_syntax (invalid_value)))))
+
+==================
+EOF inside an exponent requires digits
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+1e+
+---
+(json_text (value (number (int (digit1_9)) (exp (e) issue: (syntax_issue (incomplete_syntax (missing_digits)))))))
+
+==================
+Colon after a container value starts another member with missing comma and name
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{"a":[1] :2}
+---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        value: (value (array (value (number (int (digit1_9)))))))
+      issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+      (member
+        issue: (syntax_issue (invalid_syntax (missing_member_name)))
+        value: (value (number (int (digit1_9))))))))
+
+==================
+Stray closing after a comma preserves both array values
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+[1,}2]
+---
+(json_text
+  (value
+    (array
+      (value (number (int (digit1_9))))
+      issue: (syntax_issue (invalid_syntax (invalid_character)))
+      (value (number (int (digit1_9)))))))
+
+==================
+Stray closing after a comma preserves both object members
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{"a":1,] "b":2}
+---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        value: (value (number (int (digit1_9)))))
+      issue: (syntax_issue (invalid_syntax (invalid_character)))
+      (member
+        name: (string (char (unescaped)))
+        value: (value (number (int (digit1_9))))))))
+
+==================
+Stray closing ends an incomplete member before the next name
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{"a" ] "b":1}
+---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        issue: (syntax_issue (invalid_syntax (missing_name_separator)))
+        issue: (syntax_issue (invalid_syntax (missing_value))))
+      issue: (syntax_issue (invalid_syntax (invalid_character)))
+      issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+      (member
+        name: (string (char (unescaped)))
+        value: (value (number (int (digit1_9))))))))
