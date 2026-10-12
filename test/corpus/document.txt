@@ -1,19 +1,236 @@
 ==================
-Empty array
+All six value categories
 :language(json)
 :language(jsonc)
 :language(jsonc_trailing)
+:cst
 ==================
-[]
+[{},[],"x",123,true,false,null]
 ---
-(json_text (value (array)))
+0:0  - 0:31   json_text
+0:0  - 0:31     value
+0:0  - 0:31       array
+0:0  - 0:1          "["
+0:1  - 0:3          value
+0:1  - 0:3            object
+0:1  - 0:2              "{"
+0:2  - 0:3              "}"
+0:3  - 0:4          ","
+0:4  - 0:6          value
+0:4  - 0:6            array
+0:4  - 0:5              "["
+0:5  - 0:6              "]"
+0:6  - 0:7          ","
+0:7  - 0:10         value
+0:7  - 0:10           string
+0:7  - 0:8              "\""
+0:8  - 0:9              char
+0:8  - 0:9                unescaped `x`
+0:9  - 0:10             "\""
+0:10 - 0:11         ","
+0:11 - 0:14         value
+0:11 - 0:14           number
+0:11 - 0:14             int
+0:11 - 0:12               digit1_9 `1`
+0:12 - 0:13               digit `2`
+0:13 - 0:14               digit `3`
+0:14 - 0:15         ","
+0:15 - 0:19         value
+0:15 - 0:19           "true"
+0:19 - 0:20         ","
+0:20 - 0:25         value
+0:20 - 0:25           "false"
+0:25 - 0:26         ","
+0:26 - 0:30         value
+0:26 - 0:30           "null"
+0:30 - 0:31         "]"
 
 ==================
-Unclosed array
+Four layout characters
 :language(json)
 :language(jsonc)
 :language(jsonc_trailing)
+:cst
 ==================
-[
+ 	
+ {  "a"	:
+[ 1,	2] }
+
 ---
-(json_text (value (array (syntax_issue (incomplete_syntax (missing_array_close))))))
+0:0  - 3:0    json_text
+1:1  - 2:10     value
+1:1  - 2:10       object
+1:1  - 1:2          "{"
+1:5  - 2:8          member
+1:5  - 1:8            name: string
+1:5  - 1:6              "\""
+1:6  - 1:7              char
+1:6  - 1:7                unescaped `a`
+1:7  - 1:8              "\""
+1:9  - 1:10           ":"
+2:0  - 2:8            value: value
+2:0  - 2:8              array
+2:0  - 2:1                "["
+2:2  - 2:3                value
+2:2  - 2:3                  number
+2:2  - 2:3                    int
+2:2  - 2:3                      digit1_9 `1`
+2:3  - 2:4                ","
+2:5  - 2:6                value
+2:5  - 2:6                  number
+2:5  - 2:6                    int
+2:5  - 2:6                      digit1_9 `2`
+2:7  - 2:8                "]"
+2:9  - 2:10         "}"
+
+==================
+Empty document requires a root value
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+
+---
+0:0 - 0:0   json_text
+0:0 - 0:0     issue: syntax_issue
+0:0 - 0:0       incomplete_syntax
+0:0 - 0:0         missing_value
+
+==================
+Whitespace-only document
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+ 
+
+---
+0:0 - 1:0   json_text
+1:0 - 1:0     issue: syntax_issue
+1:0 - 1:0       incomplete_syntax
+1:0 - 1:0         missing_value
+
+==================
+Extra root value
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+1 true
+---
+0:0 - 0:6   json_text
+0:0 - 0:1     value
+0:0 - 0:1       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:2 - 0:6     issue: syntax_issue
+0:2 - 0:6       invalid_syntax
+0:2 - 0:6         unexpected_value
+0:2 - 0:6           value
+0:2 - 0:6             "true"
+
+==================
+Root stray delimiter preserves the first value
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+}true
+---
+0:0 - 0:5   json_text
+0:0 - 0:1     issue: syntax_issue
+0:0 - 0:1       invalid_syntax
+0:0 - 0:1         invalid_character `}`
+0:1 - 0:5     value
+0:1 - 0:5       "true"
+
+==================
+Initial BOM and UTF-8 leaves retain original byte positions
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+﻿{"é":"😀"}
+---
+0:3  - 0:16   json_text
+0:3  - 0:16     value
+0:3  - 0:16       object
+0:3  - 0:4          "{"
+0:4  - 0:15         member
+0:4  - 0:8            name: string
+0:4  - 0:5              "\""
+0:5  - 0:7              char
+0:5  - 0:7                unescaped `é`
+0:7  - 0:8              "\""
+0:8  - 0:9            ":"
+0:9  - 0:15           value: value
+0:9  - 0:15             string
+0:9  - 0:10               "\""
+0:10 - 0:14               char
+0:10 - 0:14                 unescaped `😀`
+0:14 - 0:15               "\""
+0:15 - 0:16         "}"
+
+==================
+Noninitial BOM is not layout
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+ ﻿[]
+---
+0:0 - 0:6   json_text
+0:1 - 0:4     value
+0:1 - 0:4       issue: syntax_issue
+0:1 - 0:4         invalid_syntax
+0:1 - 0:4           invalid_value `﻿`
+0:4 - 0:6     issue: syntax_issue
+0:4 - 0:6       invalid_syntax
+0:4 - 0:6         unexpected_value
+0:4 - 0:6           value
+0:4 - 0:6             array
+0:4 - 0:5               "["
+0:5 - 0:6               "]"
+
+==================
+Invalid number and escape regions retain confirmed leaves
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+[0x12,"\u12G"]
+---
+0:0  - 0:14   json_text
+0:0  - 0:14     value
+0:0  - 0:14       array
+0:0  - 0:1          "["
+0:1  - 0:5          value
+0:1  - 0:5            number
+0:1  - 0:5              int
+0:1  - 0:2                "0"
+0:2  - 0:5                issue: syntax_issue
+0:2  - 0:5                  invalid_syntax
+0:2  - 0:5                    invalid_number
+0:3  - 0:4                      digit `1`
+0:4  - 0:5                      digit `2`
+0:5  - 0:6          ","
+0:6  - 0:13         value
+0:6  - 0:13           string
+0:6  - 0:7              "\""
+0:7  - 0:12             char
+0:7  - 0:12               issue: syntax_issue
+0:7  - 0:12                 invalid_syntax
+0:7  - 0:12                   invalid_escape
+0:7  - 0:8                      "\\"
+0:8  - 0:9                      "u"
+0:9  - 0:10                     hexdig `1`
+0:10 - 0:11                     hexdig `2`
+0:12 - 0:13             "\""
+0:13 - 0:14         "]"

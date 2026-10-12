@@ -1,104 +1,88 @@
+const missingParts = [
+  "value",
+  "name_separator",
+  "object_close",
+  "array_close",
+  "string_close",
+  "digits",
+];
+const tokenIssues = [
+  ...missingParts.flatMap((part) => [
+    [`invalid_missing_${part}`, "invalid_syntax", `missing_${part}`],
+    [`incomplete_missing_${part}`, "incomplete_syntax", `missing_${part}`],
+  ]),
+  ["incomplete_missing_member", "incomplete_syntax", "missing_member"],
+  ["invalid_missing_member_name", "invalid_syntax", "missing_member_name"],
+  ["missing_object_separator", "invalid_syntax", "missing_value_separator"],
+  ["missing_array_separator", "invalid_syntax", "missing_value_separator"],
+  ["invalid_value", "invalid_syntax", "invalid_value"],
+  ["incomplete_value", "incomplete_syntax", "invalid_value"],
+  ["invalid_character", "invalid_syntax", "invalid_character"],
+  ["invalid_string_character", "invalid_syntax", "invalid_character"],
+  ["invalid_control_character", "invalid_syntax", "invalid_character"],
+  ["extra_comma", "invalid_syntax", "unexpected_separator", ","],
+  ["plus", "invalid_syntax", "invalid_number", "+"],
+  ["invalid_int", "invalid_syntax", "invalid_number"],
+  ["invalid_frac", "invalid_syntax", "invalid_number"],
+  ["invalid_exp", "invalid_syntax", "invalid_number"],
+  ["invalid_encoding", "invalid_syntax", "invalid_encoding"],
+  ["invalid_word_prefix", "invalid_syntax", "invalid_value"],
+  ["incomplete_comment", "incomplete_syntax", "invalid_comment"],
+  [
+    "incomplete_missing_comment_close",
+    "incomplete_syntax",
+    "missing_comment_close",
+  ],
+];
+export const tokens = [
+  "number_start",
+  "number_end",
+  "unescaped",
+  "digit",
+  "digit1_9",
+  "hexdig",
+  "true",
+  "false",
+  "null",
+  "minus",
+  "escape_start",
+  "invalid_escape_start",
+  "incomplete_escape_start",
+  "undecodable_escape_start",
+  "bad_escape_character",
+  "bad_escape_end",
+  "comma",
+  "name_separator",
+  "invalid_zero_suffix_end",
+  "single_line_comment_text",
+  "multi_line_comment_text",
+  "undecodable_word_prefix",
+  "word_fragment",
+  "word_end",
+  "member_value_start",
+  "bare_member_name",
+  ...tokenIssues.map(([token]) => token),
+  "error_sentinel",
+];
+
 export default function defineGrammar(name) {
   const comments = name !== "json";
   const trailing = name === "jsonc_trailing";
-  const missing = [
-    "value",
-    "name_separator",
-    "object_close",
-    "array_close",
-    "string_close",
-    "digits",
-  ];
-  const rawIssues = [
-    ...missing.flatMap((name) => [
-      [`invalid_missing_${name}`, "invalid_syntax", `missing_${name}`],
-      [`incomplete_missing_${name}`, "incomplete_syntax", `missing_${name}`],
-    ]),
-    ["incomplete_missing_member", "incomplete_syntax", "missing_member"],
-    ["invalid_missing_member_name", "invalid_syntax", "missing_member_name"],
-    ["missing_object_separator", "invalid_syntax", "missing_value_separator"],
-    ["missing_array_separator", "invalid_syntax", "missing_value_separator"],
-    ["invalid_value", "invalid_syntax", "invalid_value"],
-    ["incomplete_value", "incomplete_syntax", "invalid_value"],
-    ["invalid_character", "invalid_syntax", "invalid_character"],
-    ["invalid_string_character", "invalid_syntax", "invalid_character"],
-    ["invalid_control_character", "invalid_syntax", "invalid_character"],
-    ["bare_member_name", "invalid_syntax", "invalid_member_name"],
-    ["extra_comma", "invalid_syntax", "unexpected_separator", ","],
-    ["invalid_plus", "invalid_syntax", "invalid_number", "+"],
-    ["invalid_encoding", "invalid_syntax", "invalid_encoding"],
-    ["invalid_number_encoding", "invalid_syntax", "invalid_encoding"],
-    ["invalid_word_encoding", "invalid_syntax", "invalid_encoding"],
-    ["invalid_word_prefix", "invalid_syntax", "invalid_value"],
-    ["incomplete_comment", "incomplete_syntax", "invalid_comment"],
-    [
-      "incomplete_missing_comment_close",
-      "incomplete_syntax",
-      "missing_comment_close",
-    ],
-  ];
-  const markers = [
-    "number_start",
-    "int_end",
-    "frac_end",
-    "exp_end",
-    "number_end",
-    "unescaped",
-    "digit",
-    "digit1_9",
-    "hexdig",
-    "true",
-    "false",
-    "null",
-    "escape_start",
-    "invalid_escape_start",
-    "incomplete_escape_start",
-    "bad_escape_character",
-    "bad_escape_end",
-    "comma",
-    "exp_plus",
-    "exp_minus",
-    "name_separator",
-    "invalid_int_start",
-    "invalid_int_character",
-    "invalid_int_end",
-    "invalid_frac_start",
-    "invalid_frac_character",
-    "invalid_frac_end",
-    "invalid_exp_start",
-    "invalid_exp_character",
-    "invalid_exp_end",
-    "undecodable_escape_start",
-    "invalid_zero_suffix_start",
-    "invalid_zero_suffix_end",
-    "single_line_comment_text",
-    "multi_line_comment_text",
-    "undecodable_word_prefix",
-    "word_fragment",
-    "word_end",
-    "member_value_start",
-  ];
-  const issue = ($, name) =>
-    field("issue", alias($[`_${name}_issue`], $.syntax_issue));
-  const absent = ($, name) =>
-    choice(
-      issue($, `invalid_missing_${name}`),
-      issue($, `incomplete_missing_${name}`),
-    );
   const rules = {};
-  function problem(name, outcome, reason, body) {
-    rules[`_${name}_source`] = body;
-    rules[`_${name}_outcome`] = ($) => alias($[`_${name}_source`], $[reason]);
-    rules[`_${name}_issue`] = ($) => alias($[`_${name}_outcome`], $[outcome]);
+  function defineIssue(id, outcome, reason, source) {
+    rules[`_${id}_source`] = source;
+    rules[`_${id}_outcome`] = ($) => alias($[`_${id}_source`], $[reason]);
+    rules[`_${id}_issue`] = ($) => alias($[`_${id}_outcome`], $[outcome]);
   }
-  for (const [name, outcome, reason, leaf] of rawIssues) {
-    problem(name, outcome, reason, ($) =>
-      leaf ? alias($[`_${name}`], leaf) : $[`_${name}`],
+  const issue = ($, id) =>
+    field("issue", alias($[`_${id}_issue`], $.syntax_issue));
+  const absent = ($, part) =>
+    choice(
+      issue($, `invalid_missing_${part}`),
+      issue($, `incomplete_missing_${part}`),
     );
-  }
   const digit = ($) => alias($._digit, $.digit);
   const value = ($, context) => alias($[`_value_${context}`], $.value);
-  const member = ($, context) => alias($[`_member_${context}`], $.member);
   const layout = ($) =>
     comments
       ? [
@@ -125,22 +109,9 @@ export default function defineGrammar(name) {
         issue($, "invalid_encoding"),
       ),
     );
-  for (const part of ["int", "frac", "exp"]) {
-    problem(`invalid_${part}`, "invalid_syntax", "invalid_number", ($) =>
-      seq(
-        $[`_invalid_${part}_start`],
-        repeat1($[`_invalid_${part}_character`]),
-        $[`_invalid_${part}_end`],
-      ),
-    );
-  }
-  problem("invalid_zero_suffix", "invalid_syntax", "invalid_number", ($) =>
-    seq(
-      $._invalid_zero_suffix_start,
-      repeat1(choice(digit($), $._invalid_int_character)),
-      $._invalid_zero_suffix_end,
-    ),
-  );
+  const extraCommas = ($) => repeat(seq(issue($, "extra_comma"), gap($)));
+  const digitItem = ($, part) =>
+    choice(digit($), issue($, `invalid_${part}`), issue($, "invalid_encoding"));
   const badEscape = ($) =>
     seq(
       "\\",
@@ -154,70 +125,88 @@ export default function defineGrammar(name) {
       ),
       $._bad_escape_end,
     );
+
+  const containerContext = (kind, context) =>
+    context === "root" || context === kind ? kind : "both";
+  function collection($, kind, context) {
+    const array = kind === "array";
+    return seq(
+      array ? "[" : "{",
+      gap($),
+      extraCommas($),
+      optional($[`_${kind}_${context}_body`]),
+      choice(
+        array ? "]" : "}",
+        issue($, `incomplete_missing_${kind}_close`),
+        ...(context === "both"
+          ? [issue($, `invalid_missing_${kind}_close`)]
+          : []),
+      ),
+    );
+  }
+  function collectionBody($, kind, context) {
+    const array = kind === "array";
+    const item = array
+      ? value($, context)
+      : choice(
+          alias($[`_member_${context}`], $.member),
+          issue($, `unexpected_${context}`),
+        );
+    const comma = alias($._comma, ",");
+    return seq(
+      item,
+      gap($),
+      repeat(
+        seq(
+          choice(
+            seq(
+              comma,
+              gap($),
+              extraCommas($),
+              trailing
+                ? item
+                : choice(
+                    item,
+                    array
+                      ? absent($, "value")
+                      : issue($, "incomplete_missing_member"),
+                  ),
+            ),
+            seq(issue($, `missing_${kind}_separator`), item),
+          ),
+          gap($),
+        ),
+      ),
+      trailing ? optional($._trailing_comma) : extraCommas($),
+    );
+  }
+
+  for (const [token, outcome, reason, leaf] of tokenIssues) {
+    defineIssue(token, outcome, reason, ($) =>
+      leaf ? alias($[`_${token}`], leaf) : $[`_${token}`],
+    );
+  }
+  defineIssue("invalid_zero_suffix", "invalid_syntax", "invalid_number", ($) =>
+    seq(repeat1(choice(digit($), $._invalid_int)), $._invalid_zero_suffix_end),
+  );
   for (const kind of ["invalid", "incomplete"]) {
-    problem(`${kind}_escape`, `${kind}_syntax`, "invalid_escape", ($) =>
+    defineIssue(`${kind}_escape`, `${kind}_syntax`, "invalid_escape", ($) =>
       seq($[`_${kind}_escape_start`], badEscape($)),
     );
   }
-  function collection($, kind, context, nested) {
-    const isArray = kind === "array";
-    const item = isArray
-      ? value($, context)
-      : choice(member($, context), issue($, `unexpected_${context}`));
-    const comma = alias($._comma, ",");
-    const extraCommas = repeat(seq(issue($, "extra_comma"), gap($)));
-    return seq(
-      isArray ? "[" : "{",
-      gap($),
-      extraCommas,
-      optional(
-        seq(
-          item,
-          gap($),
-          repeat(
-            seq(
-              choice(
-                seq(
-                  comma,
-                  gap($),
-                  extraCommas,
-                  choice(
-                    item,
-                    ...(trailing
-                      ? []
-                      : [
-                          isArray
-                            ? absent($, "value")
-                            : issue($, "incomplete_missing_member"),
-                        ]),
-                  ),
-                ),
-                seq(issue($, `missing_${kind}_separator`), item),
-              ),
-              gap($),
-            ),
-          ),
-          trailing ? optional(seq(comma, gap($), extraCommas)) : extraCommas,
-        ),
-      ),
-      choice(
-        isArray ? "]" : "}",
-        issue($, `incomplete_missing_${kind}_close`),
-        ...(nested ? [issue($, `invalid_missing_${kind}_close`)] : []),
-      ),
-    );
-  }
+  defineIssue("unexpected_root", "invalid_syntax", "unexpected_value", ($) =>
+    value($, "root"),
+  );
   for (const context of ["root", "array", "object", "both"]) {
-    const hasArray = context === "array" || context === "both";
-    const hasObject = context === "object" || context === "both";
+    const inObject = context === "object" || context === "both";
     rules[`_non_string_${context}`] = ($) =>
       choice(
         $.number,
         alias($._true, "true"),
         alias($._false, "false"),
         alias($._null, "null"),
-        alias($[hasObject ? "_array_in_object" : "_array"], $.array),
-        alias($[hasArray ? "_object_in_array" : "_object"], $.object),
+        alias($[`_array_${containerContext("array", context)}`], $.array),
+        alias($[`_object_${containerContext("object", context)}`], $.object),
         issue($, "invalid_value"),
         issue($, "incomplete_value"),
       );
@@ -225,19 +214,14 @@ export default function defineGrammar(name) {
       choice($[`_non_string_${context}`], $._undecodable_word);
     rules[`_value_${context}`] = ($) =>
       choice($.string, $[`_non_string_value_${context}`]);
-    if (context !== "array") {
-      problem(
+    if (inObject) {
+      defineIssue(
         `unexpected_${context}`,
         "invalid_syntax",
         "unexpected_value",
-        ($) =>
-          context === "root"
-            ? value($, context)
-            : alias($[`_non_string_value_${context}`], $.value),
+        ($) => alias($[`_non_string_value_${context}`], $.value),
       );
-    }
-    if (context === "object" || context === "both") {
-      problem(
+      defineIssue(
         `invalid_name_${context}`,
         "invalid_syntax",
         "invalid_member_name",
@@ -250,6 +234,7 @@ export default function defineGrammar(name) {
                 choice($._undecodable_word_prefix, $._invalid_word_prefix),
                 $._undecodable_word_tail,
               ),
+              $._bare_member_name,
             ),
           ),
       );
@@ -265,10 +250,7 @@ export default function defineGrammar(name) {
               ),
             ),
             seq(
-              choice(
-                issue($, `invalid_name_${context}`),
-                issue($, "bare_member_name"),
-              ),
+              issue($, `invalid_name_${context}`),
               memberGap($),
               alias($._name_separator, ":"),
             ),
@@ -285,14 +267,24 @@ export default function defineGrammar(name) {
         );
     }
   }
+  if (trailing) {
+    rules._trailing_comma = ($) =>
+      seq(alias($._comma, ","), gap($), extraCommas($));
+  }
+  for (const [kind, context] of [
+    ["array", "array"],
+    ["array", "both"],
+    ["object", "object"],
+    ["object", "both"],
+  ]) {
+    rules[`_${kind}_${context}`] = ($) => collection($, kind, context);
+    rules[`_${kind}_${context}_body`] = ($) => collectionBody($, kind, context);
+  }
+
   return grammar({
     name,
     extras: () => [],
-    externals: ($) => [
-      ...markers.map((name) => $[`_${name}`]),
-      ...rawIssues.map(([name]) => $[`_${name}`]),
-      $._error_sentinel,
-    ],
+    externals: ($) => tokens.map((token) => $[`_${token}`]),
     conflicts: ($) => [
       [$._non_string_value_object, $._invalid_name_object_source],
       [$._non_string_value_both, $._invalid_name_both_source],
@@ -317,8 +309,8 @@ export default function defineGrammar(name) {
         ),
       _undecodable_word_tail: ($) =>
         seq(
-          issue($, "invalid_word_encoding"),
-          repeat(choice($._word_fragment, issue($, "invalid_word_encoding"))),
+          issue($, "invalid_encoding"),
+          repeat(choice($._word_fragment, issue($, "invalid_encoding"))),
           $._word_end,
         ),
       ...(comments
@@ -348,10 +340,6 @@ export default function defineGrammar(name) {
               ),
           }
         : {}),
-      _array: ($) => collection($, "array", "array", false),
-      _array_in_object: ($) => collection($, "array", "both", true),
-      _object: ($) => collection($, "object", "object", false),
-      _object_in_array: ($) => collection($, "object", "both", true),
       string: ($) =>
         seq(
           '"',
@@ -397,15 +385,12 @@ export default function defineGrammar(name) {
       number: ($) =>
         seq(
           $._number_start,
-          optional(choice("-", issue($, "invalid_plus"))),
+          optional(choice(alias($._minus, "-"), issue($, "plus"))),
           choice(
             $.int,
             seq(
               repeat1(
-                choice(
-                  issue($, "invalid_int"),
-                  issue($, "invalid_number_encoding"),
-                ),
+                choice(issue($, "invalid_int"), issue($, "invalid_encoding")),
               ),
               optional($.int),
             ),
@@ -416,60 +401,25 @@ export default function defineGrammar(name) {
           $._number_end,
         ),
       int: ($) =>
-        seq(
-          choice(
-            seq(
-              "0",
-              repeat(
-                choice(
-                  issue($, "invalid_zero_suffix"),
-                  issue($, "invalid_number_encoding"),
-                ),
-              ),
-            ),
-            seq(
-              alias($._digit1_9, $.digit1_9),
-              repeat(
-                choice(
-                  digit($),
-                  issue($, "invalid_int"),
-                  issue($, "invalid_number_encoding"),
-                ),
+        choice(
+          seq(
+            "0",
+            repeat(
+              choice(
+                issue($, "invalid_zero_suffix"),
+                issue($, "invalid_encoding"),
               ),
             ),
           ),
-          $._int_end,
+          seq(alias($._digit1_9, $.digit1_9), repeat(digitItem($, "int"))),
         ),
       frac: ($) =>
-        seq(
-          ".",
-          choice(
-            repeat1(
-              choice(
-                digit($),
-                issue($, "invalid_frac"),
-                issue($, "invalid_number_encoding"),
-              ),
-            ),
-            absent($, "digits"),
-          ),
-          $._frac_end,
-        ),
+        seq(".", choice(repeat1(digitItem($, "frac")), absent($, "digits"))),
       exp: ($) =>
         seq(
           $.e,
-          optional(choice(alias($._exp_plus, "+"), alias($._exp_minus, "-"))),
-          choice(
-            repeat1(
-              choice(
-                digit($),
-                issue($, "invalid_exp"),
-                issue($, "invalid_number_encoding"),
-              ),
-            ),
-            absent($, "digits"),
-          ),
-          $._exp_end,
+          optional(choice(alias($._plus, "+"), alias($._minus, "-"))),
+          choice(repeat1(digitItem($, "exp")), absent($, "digits")),
         ),
       e: () => token(choice("e", "E")),
       ...rules,

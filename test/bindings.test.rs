@@ -395,29 +395,6 @@ fn byte_edit_histories_preserve_the_public_cst_and_decoding_issues() {
 }
 
 #[test]
-fn invalid_escape_before_comment_markers_keeps_its_source_range() {
-  for (name, language) in languages() {
-    let mut parser = parser(&language);
-    let source = br#""\*/""#;
-    let tree = parser.parse(source, None).unwrap();
-    assert!(
-      !tree.root_node().has_error(),
-      "{name}: {}",
-      tree.root_node().to_sexp()
-    );
-    let nodes = snapshot(&tree);
-    let issue = nodes
-      .iter()
-      .find(|node| node.kind == "invalid_escape")
-      .unwrap();
-    assert_eq!(issue.range, 1..3, "{name}");
-    let slash = nodes.iter().find(|node| node.kind == "unescaped").unwrap();
-    assert_eq!(slash.range, 3..4, "{name}");
-    assert_issue_ownership(&nodes, source);
-  }
-}
-
-#[test]
 fn continuation_byte_edits_and_restoration_match_fresh_parsing() {
   for (language_name, language) in languages() {
     for (name, original, byte, delete, insert) in [

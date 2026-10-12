@@ -1,0 +1,447 @@
+==================
+Invalid number regions retain confirmed digits
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+[01, 0x12, 1.2.3, 1e2e3, +4]
+---
+(json_text
+  (value
+    (array
+      (value (number (int issue: (syntax_issue (invalid_syntax (invalid_number (digit)))))))
+      (value (number (int issue: (syntax_issue (invalid_syntax (invalid_number (digit) (digit)))))))
+      (value (number (int (digit1_9)) (frac (digit) issue: (syntax_issue (invalid_syntax (invalid_number))) (digit))))
+      (value (number (int (digit1_9)) (exp (e) (digit) issue: (syntax_issue (invalid_syntax (invalid_number))) (digit))))
+      (value (number issue: (syntax_issue (invalid_syntax (invalid_number))) (int (digit1_9)))))))
+
+==================
+Decimal components and digits
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+[-0, 12.34E-56]
+---
+(json_text
+  (value
+    (array
+      (value (number (int)))
+      (value
+        (number
+          (int (digit1_9) (digit))
+          (frac (digit) (digit))
+          (exp (e) (digit) (digit)))))))
+
+==================
+Decimal forms and large exponents
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+[-0,12,-12,1.25,0.001,1e9,1E+400,-1.5e-12]
+---
+0:0  - 0:42   json_text
+0:0  - 0:42     value
+0:0  - 0:42       array
+0:0  - 0:1          "["
+0:1  - 0:3          value
+0:1  - 0:3            number
+0:1  - 0:2              "-"
+0:2  - 0:3              int
+0:2  - 0:3                "0"
+0:3  - 0:4          ","
+0:4  - 0:6          value
+0:4  - 0:6            number
+0:4  - 0:6              int
+0:4  - 0:5                digit1_9 `1`
+0:5  - 0:6                digit `2`
+0:6  - 0:7          ","
+0:7  - 0:10         value
+0:7  - 0:10           number
+0:7  - 0:8              "-"
+0:8  - 0:10             int
+0:8  - 0:9                digit1_9 `1`
+0:9  - 0:10               digit `2`
+0:10 - 0:11         ","
+0:11 - 0:15         value
+0:11 - 0:15           number
+0:11 - 0:12             int
+0:11 - 0:12               digit1_9 `1`
+0:12 - 0:15             frac
+0:12 - 0:13               "."
+0:13 - 0:14               digit `2`
+0:14 - 0:15               digit `5`
+0:15 - 0:16         ","
+0:16 - 0:21         value
+0:16 - 0:21           number
+0:16 - 0:17             int
+0:16 - 0:17               "0"
+0:17 - 0:21             frac
+0:17 - 0:18               "."
+0:18 - 0:19               digit `0`
+0:19 - 0:20               digit `0`
+0:20 - 0:21               digit `1`
+0:21 - 0:22         ","
+0:22 - 0:25         value
+0:22 - 0:25           number
+0:22 - 0:23             int
+0:22 - 0:23               digit1_9 `1`
+0:23 - 0:25             exp
+0:23 - 0:24               e `e`
+0:24 - 0:25               digit `9`
+0:25 - 0:26         ","
+0:26 - 0:32         value
+0:26 - 0:32           number
+0:26 - 0:27             int
+0:26 - 0:27               digit1_9 `1`
+0:27 - 0:32             exp
+0:27 - 0:28               e `E`
+0:28 - 0:29               "+"
+0:29 - 0:30               digit `4`
+0:30 - 0:31               digit `0`
+0:31 - 0:32               digit `0`
+0:32 - 0:33         ","
+0:33 - 0:41         value
+0:33 - 0:41           number
+0:33 - 0:34             "-"
+0:34 - 0:35             int
+0:34 - 0:35               digit1_9 `1`
+0:35 - 0:37             frac
+0:35 - 0:36               "."
+0:36 - 0:37               digit `5`
+0:37 - 0:41             exp
+0:37 - 0:38               e `e`
+0:38 - 0:39               "-"
+0:39 - 0:40               digit `1`
+0:40 - 0:41               digit `2`
+0:41 - 0:42         "]"
+
+==================
+Top-level number
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+42
+---
+0:0 - 0:2   json_text
+0:0 - 0:2     value
+0:0 - 0:2       number
+0:0 - 0:2         int
+0:0 - 0:1           digit1_9 `4`
+0:1 - 0:2           digit `2`
+
+==================
+Exponent markers are named leaves
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+[1e2,1E2]
+---
+0:0 - 0:9   json_text
+0:0 - 0:9     value
+0:0 - 0:9       array
+0:0 - 0:1         "["
+0:1 - 0:4         value
+0:1 - 0:4           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:4             exp
+0:2 - 0:3               e `e`
+0:3 - 0:4               digit `2`
+0:4 - 0:5         ","
+0:5 - 0:8         value
+0:5 - 0:8           number
+0:5 - 0:6             int
+0:5 - 0:6               digit1_9 `1`
+0:6 - 0:8             exp
+0:6 - 0:7               e `E`
+0:7 - 0:8               digit `2`
+0:8 - 0:9         "]"
+
+==================
+Leading zero
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+01
+---
+0:0 - 0:2   json_text
+0:0 - 0:2     value
+0:0 - 0:2       number
+0:0 - 0:2         int
+0:0 - 0:1           "0"
+0:1 - 0:2           issue: syntax_issue
+0:1 - 0:2             invalid_syntax
+0:1 - 0:2               invalid_number
+0:1 - 0:2                 digit `1`
+
+==================
+Exponent at EOF
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+1e+
+---
+0:0 - 0:3   json_text
+0:0 - 0:3     value
+0:0 - 0:3       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:3         exp
+0:1 - 0:2           e `e`
+0:2 - 0:3           "+"
+0:3 - 0:3           issue: syntax_issue
+0:3 - 0:3             incomplete_syntax
+0:3 - 0:3               missing_digits
+
+==================
+Exponent ended by layout
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+1e 
+---
+0:0 - 0:3   json_text
+0:0 - 0:2     value
+0:0 - 0:2       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:2         exp
+0:1 - 0:2           e `e`
+0:2 - 0:2           issue: syntax_issue
+0:2 - 0:2             invalid_syntax
+0:2 - 0:2               missing_digits
+
+==================
+Integer digits at EOF
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+-
+---
+0:0 - 0:1   json_text
+0:0 - 0:1     value
+0:0 - 0:1       number
+0:0 - 0:1         "-"
+0:1 - 0:1         issue: syntax_issue
+0:1 - 0:1           incomplete_syntax
+0:1 - 0:1             missing_digits
+
+==================
+Integer digits before fraction
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+.5
+---
+0:0 - 0:2   json_text
+0:0 - 0:2     value
+0:0 - 0:2       number
+0:0 - 0:0         issue: syntax_issue
+0:0 - 0:0           invalid_syntax
+0:0 - 0:0             missing_digits
+0:0 - 0:2         frac
+0:0 - 0:1           "."
+0:1 - 0:2           digit `5`
+
+==================
+Fraction digits at EOF
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+1.
+---
+0:0 - 0:2   json_text
+0:0 - 0:2     value
+0:0 - 0:2       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:2         frac
+0:1 - 0:2           "."
+0:2 - 0:2           issue: syntax_issue
+0:2 - 0:2             incomplete_syntax
+0:2 - 0:2               missing_digits
+
+==================
+Fraction digits before exponent
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+1.e2
+---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:2         frac
+0:1 - 0:2           "."
+0:2 - 0:2           issue: syntax_issue
+0:2 - 0:2             invalid_syntax
+0:2 - 0:2               missing_digits
+0:2 - 0:4         exp
+0:2 - 0:3           e `e`
+0:3 - 0:4           digit `2`
+
+==================
+Hexadecimal notation stays in one number
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+0x10
+---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       number
+0:0 - 0:4         int
+0:0 - 0:1           "0"
+0:1 - 0:4           issue: syntax_issue
+0:1 - 0:4             invalid_syntax
+0:1 - 0:4               invalid_number
+0:2 - 0:3                 digit `1`
+0:3 - 0:4                 digit `0`
+
+==================
+Second decimal point
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+1.2.3
+---
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:5         frac
+0:1 - 0:2           "."
+0:2 - 0:3           digit `2`
+0:3 - 0:4           issue: syntax_issue
+0:3 - 0:4             invalid_syntax
+0:3 - 0:4               invalid_number `.`
+0:4 - 0:5           digit `3`
+
+==================
+Second exponent
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+1e2e3
+---
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:5         exp
+0:1 - 0:2           e `e`
+0:2 - 0:3           digit `2`
+0:3 - 0:4           issue: syntax_issue
+0:3 - 0:4             invalid_syntax
+0:3 - 0:4               invalid_number `e`
+0:4 - 0:5           digit `3`
+
+==================
+Invalid integer text is not also missing digits
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+-NaN
+---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       number
+0:0 - 0:1         "-"
+0:1 - 0:4         issue: syntax_issue
+0:1 - 0:4           invalid_syntax
+0:1 - 0:4             invalid_number `NaN`
+
+==================
+Leading plus
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
++1
+---
+0:0 - 0:2   json_text
+0:0 - 0:2     value
+0:0 - 0:2       number
+0:0 - 0:1         issue: syntax_issue
+0:0 - 0:1           invalid_syntax
+0:0 - 0:1             invalid_number
+0:0 - 0:1               "+"
+0:1 - 0:2         int
+0:1 - 0:2           digit1_9 `1`
+
+==================
+Normal digits split contiguous invalid numeric runs
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+1__2__3
+---
+0:0 - 0:7   json_text
+0:0 - 0:7     value
+0:0 - 0:7       number
+0:0 - 0:7         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:3           issue: syntax_issue
+0:1 - 0:3             invalid_syntax
+0:1 - 0:3               invalid_number `__`
+0:3 - 0:4           digit `2`
+0:4 - 0:6           issue: syntax_issue
+0:4 - 0:6             invalid_syntax
+0:4 - 0:6               invalid_number `__`
+0:6 - 0:7           digit `3`
+
+==================
+Normal integer follows an invalid prefix
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+--12
+---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       number
+0:0 - 0:1         "-"
+0:1 - 0:2         issue: syntax_issue
+0:1 - 0:2           invalid_syntax
+0:1 - 0:2             invalid_number `-`
+0:2 - 0:4         int
+0:2 - 0:3           digit1_9 `1`
+0:3 - 0:4           digit `2`

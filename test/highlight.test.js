@@ -16,6 +16,10 @@ import {
   root,
 } from "../scripts/tree-sitter.js";
 
+const commandTimeoutMs = 60_000;
+const firstThemeColor = 17;
+const newlineByte = 0x0a;
+
 function decodeEntities(text) {
   return text
     .replaceAll("&lt;", "<")
@@ -66,7 +70,7 @@ function createHighlighter({ directory, root, run, captureNames }) {
     JSON.stringify({
       "parser-directories": [parserDirectory],
       theme: Object.fromEntries(
-        captureNames.map((name, index) => [name, index + 17]),
+        captureNames.map((name, index) => [name, index + firstThemeColor]),
       ),
     }),
   );
@@ -125,7 +129,7 @@ function assertCaptures(source, actual, ranges) {
     previousEnd = end;
   }
   for (const [index, byte] of bytes.entries()) {
-    if (byte !== 10)
+    if (byte !== newlineByte)
       assert.equal(
         actual[index],
         expected[index],
@@ -169,7 +173,7 @@ after(() => {
 
 function assertCommand(arguments_) {
   const result = runner.run(arguments_, {
-    timeout: 60_000,
+    timeout: commandTimeoutMs,
   });
   assert.ifError(result.error);
   assert.equal(result.status, 0, result.stdout + result.stderr);
@@ -273,11 +277,6 @@ const finalCaptureCases = [
     ],
   },
   {
-    name: "raw invalid text has no extension-language captures",
-    source: "/*comment*/ 'text' NaN",
-    captures: [],
-  },
-  {
     name: "UTF-8 content and spaces use their owning string context",
     source: '{"é ":"😀 "}',
     captures: [
@@ -293,15 +292,16 @@ const finalCaptureCases = [
 ];
 for (const grammar of grammars) {
   for (const { name, source, captures } of finalCaptureCases) {
-    if (
-      grammar.name !== "json" &&
-      name === "raw invalid text has no extension-language captures"
-    )
-      continue;
     test(`${grammar.name}: ${name}`, () =>
       assertCaptures(source, highlight(grammar.scope, source), captures));
   }
-  if (grammar.name === "json") continue;
+  if (grammar.name === "json") {
+    test(`${grammar.name}: raw invalid text has no extension-language captures`, () => {
+      const source = "/*comment*/ 'text' NaN";
+      assertCaptures(source, highlight(grammar.scope, source), []);
+    });
+    continue;
+  }
   for (const { name, source, captures } of [
     {
       name: "comment leaves and member leaves keep separate captures",

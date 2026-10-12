@@ -5,12 +5,7 @@
 [![npm](https://img.shields.io/npm/v/@konomanoasa/tree-sitter-json)](https://www.npmjs.com/package/@konomanoasa/tree-sitter-json)
 
 [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammars for
-JavaScript Object Notation (JSON) and JSON with comments (JSONC).
-
-## Syntax Issues
-
-The parser detects syntax issues, including missing syntax, while preserving the surrounding structure.
-These issues are represented as `syntax_issue` nodes.
+JSON and JSON with comments.
 
 ## Installation
 
@@ -19,6 +14,8 @@ npm install @konomanoasa/tree-sitter-json
 ```
 
 ## Grammars
+
+JSON variants have different syntax, so we use separate grammars.
 
 | Grammar          | Comments | Trailing commas |
 | ---------------- | -------- | --------------- |
@@ -41,6 +38,10 @@ npm test
 - [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html)
 - [ECMA-404, second edition](https://ecma-international.org/publications-and-standards/standards/ecma-404/)
 - [JSONC draft](https://jsonc.org/)
+
+## Used By
+
+[json-ts-mode](https://github.com/konomanoasa/json-ts-mode): Emacs major mode.
 
 ## License
 

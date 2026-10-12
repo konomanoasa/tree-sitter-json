@@ -9,7 +9,7 @@
       "file-types": ["json"],
       "injection-regex": "^json$",
       "highlights": "queries/highlights.scm",
-      "external-files": ["common/scanner.h"]
+      "external-files": ["common/scanner.h", "common/tokens.h"]
     },
     {
       "name": "jsonc",
@@ -19,7 +19,7 @@
       "file-types": ["jsonc"],
       "injection-regex": "^jsonc$",
       "highlights": ["queries/highlights.scm", "jsonc/queries/highlights.scm"],
-      "external-files": ["common/scanner.h"]
+      "external-files": ["common/scanner.h", "common/tokens.h"]
     },
     {
       "name": "jsonc_trailing",
@@ -28,7 +28,7 @@
       "path": "jsonc_trailing",
       "injection-regex": "^jsonc_trailing$",
       "highlights": ["queries/highlights.scm", "jsonc/queries/highlights.scm"],
-      "external-files": ["common/scanner.h"]
+      "external-files": ["common/scanner.h", "common/tokens.h"]
     }
   ],
   "metadata": {

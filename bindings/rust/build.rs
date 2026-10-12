@@ -16,6 +16,7 @@ fn main() {
   }
 
   println!("cargo::rerun-if-changed=common/scanner.h");
+  println!("cargo::rerun-if-changed=common/tokens.h");
   for (directory, library) in [
     ("src", "tree-sitter-json"),
     ("jsonc/src", "tree-sitter-jsonc"),

@@ -27,7 +27,7 @@ const variants = grammars.map((grammar) => {
   const includeDirectory = join(root, grammar.path, "src");
   const source = join(includeDirectory, "scanner.c");
   const headers = grammar.externalFiles
-    .filter((file) => file.endsWith(".h"))
+    .filter((file) => file.endsWith(".h") && file !== "common/tokens.h")
     .map((file) => join(root, file));
   return {
     name: grammar.name,
