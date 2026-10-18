@@ -76,7 +76,7 @@ static inline bool continues_line(TSLexer *l) {
   return !l->eof(l) && l->lookahead != DECODE_ERROR && !line_end(l->lookahead);
 }
 
-// The opening '/' is already consumed.
+// Opening '/' already consumed.
 static inline bool opens_comment(TSLexer *l) {
   return l->lookahead == '/' || l->lookahead == '*' || l->eof(l);
 }
@@ -132,7 +132,7 @@ missing(TSLexer *l, const bool *v, unsigned invalid, unsigned incomplete) {
   return v[token] && emit_zero_width(l, token);
 }
 
-// The opening '/' is already consumed.
+// Opening '/' already consumed.
 static inline bool skip_comment(TSLexer *l) {
   if (l->lookahead == '/') {
     do {
@@ -556,7 +556,7 @@ static inline bool scan(TSLexer *l, const bool *v) {
     return scan_slash(l, v);
   if (c == '\\' && v[ESCAPE_START]) return scan_escape_start(l, v);
   if (c == ',' && (v[COMMA] || v[EXTRA_COMMA])) return scan_comma(l, v);
-  // These scanners must not consume input on failure.
+  // Failure must leave input untouched.
   return scan_member_value_start(l, v) ||
     scan_decode_errors(l, v) ||
     scan_word_tail(l, v) ||

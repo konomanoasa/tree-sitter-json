@@ -15,7 +15,7 @@ npm install @konomanoasa/tree-sitter-json
 
 ## Grammars
 
-JSON variants have different syntax, so we use separate grammars.
+JSON variants have different syntax, so separate grammars are provided.
 
 | Grammar          | Comments | Trailing commas |
 | ---------------- | -------- | --------------- |
