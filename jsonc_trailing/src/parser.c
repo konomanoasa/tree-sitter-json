@@ -58493,7 +58493,7 @@ TS_PUBLIC const TSLanguage *tree_sitter_jsonc_trailing(void) {
     .metadata = {
       .major_version = 0,
       .minor_version = 2,
-      .patch_version = 1,
+      .patch_version = 2,
     },
   };
   return &language;
