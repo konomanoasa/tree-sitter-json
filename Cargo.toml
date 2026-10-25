@@ -1,6 +1,6 @@
 [package]
 name = "konomanoasa-tree-sitter-json"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 description = "Tree-sitter grammars for JSON and JSONC."
 readme = "README.md"
