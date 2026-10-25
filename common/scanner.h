@@ -76,7 +76,6 @@ static inline bool continues_line(TSLexer *l) {
   return !l->eof(l) && l->lookahead != DECODE_ERROR && !line_end(l->lookahead);
 }
 
-// Opening '/' already consumed.
 static inline bool opens_comment(TSLexer *l) {
   return l->lookahead == '/' || l->lookahead == '*' || l->eof(l);
 }
@@ -132,7 +131,6 @@ missing(TSLexer *l, const bool *v, unsigned invalid, unsigned incomplete) {
   return v[token] && emit_zero_width(l, token);
 }
 
-// Opening '/' already consumed.
 static inline bool skip_comment(TSLexer *l) {
   if (l->lookahead == '/') {
     do {

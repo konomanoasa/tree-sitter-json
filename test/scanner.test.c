@@ -6,6 +6,8 @@
 
 #include JSON_SCANNER_SOURCE
 
+#define COUNT(array) (sizeof(array) / sizeof((array)[0]))
+
 #define SCANNER_FUNCTION_RAW(prefix, name) prefix##_##name
 #define SCANNER_FUNCTION(prefix, name) SCANNER_FUNCTION_RAW(prefix, name)
 #define scanner_function(name) SCANNER_FUNCTION(JSON_SCANNER_PREFIX, name)
@@ -84,7 +86,7 @@ static void test_eof_issues_do_not_consume_source(void) {
 
 static void test_escape_lookahead_preserves_the_token_start(void) {
   const int32_t input[] = {'\\', 'u', '1', '2', '"'};
-  const size_t input_length = sizeof(input) / sizeof(input[0]);
+  const size_t input_length = COUNT(input);
   struct MockLexer mock;
   init_mock_lexer(&mock, input, input_length);
   bool valid[TOKEN_COUNT] = {false};
@@ -103,7 +105,7 @@ static void test_escape_lookahead_preserves_the_token_start(void) {
 
 static void test_comma_token_excludes_layout_and_later_commas(void) {
   const int32_t input[] = {',', ' ', ',', '\n', ']'};
-  const size_t input_length = sizeof(input) / sizeof(input[0]);
+  const size_t input_length = COUNT(input);
   struct MockLexer mock;
   init_mock_lexer(&mock, input, input_length);
   bool valid[TOKEN_COUNT] = {false};
@@ -118,7 +120,7 @@ static void test_comma_token_excludes_layout_and_later_commas(void) {
 
 static void test_literal_boundaries_and_prefixes(void) {
   const int32_t input[] = {'t', 'r', 'u', ' '};
-  const size_t input_length = sizeof(input) / sizeof(input[0]);
+  const size_t input_length = COUNT(input);
   const size_t prefix_length = input_length - 1;
   struct MockLexer mock;
   bool valid[TOKEN_COUNT] = {false};
@@ -138,7 +140,7 @@ static void test_literal_boundaries_and_prefixes(void) {
 static void test_nul_is_a_real_control_character_not_eof(void) {
   const int32_t input[] = {0};
   struct MockLexer mock;
-  init_mock_lexer(&mock, input, sizeof(input) / sizeof(input[0]));
+  init_mock_lexer(&mock, input, COUNT(input));
   bool valid[TOKEN_COUNT] = {false};
   valid[INVALID_STRING_CHARACTER] = true;
   valid[INCOMPLETE_MISSING_STRING_CLOSE] = true;

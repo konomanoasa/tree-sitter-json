@@ -76,13 +76,11 @@ function createHighlighter({ directory, root, run, captureNames }) {
   );
   writeFileSync(capturePath, `${captureNames.join("\n")}\n`);
 
-  return (scope, source, valid = true) => {
+  return (scope, source) => {
     const path = join(directory, "highlight.txt");
     writeFileSync(path, source);
-    if (valid) {
-      const parsed = run(["parse", "--cst", "--scope", scope, path]);
-      assert.doesNotMatch(parsed, /^[0-9: \t-]+•/m, parsed);
-    }
+    const parsed = run(["parse", "--cst", "--scope", scope, path]);
+    assert.doesNotMatch(parsed, /^[0-9: \t-]+•/m, parsed);
     const captures = renderedCaptures(
       run([
         "highlight",

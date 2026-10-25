@@ -7,25 +7,24 @@
 [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammars for
 JSON and JSON with comments.
 
+## Grammars
+
+| Grammar | Language |
+| ------- | -------- |
+| `json`  | JSON     |
+| `jsonc` | JSONC    |
+
+## Parsing Option
+
+For JSONC with trailing commas, use `jsonc_trailing`.
+
 ## Installation
 
 ```sh
 npm install @konomanoasa/tree-sitter-json
 ```
 
-## Grammars
-
-JSON variants have different syntax, so separate grammars are provided.
-
-| Grammar          | Comments | Trailing commas |
-| ---------------- | -------- | --------------- |
-| `json`           | No       | No              |
-| `jsonc`          | Yes      | No              |
-| `jsonc_trailing` | Yes      | Yes             |
-
 ## Development
-
-Development uses Node.js 24.21.0 or later.
 
 ```sh
 npm install
@@ -41,7 +40,7 @@ npm test
 
 ## Used By
 
-[json-ts-mode](https://github.com/konomanoasa/json-ts-mode): Emacs major mode.
+[json-ts-mode](https://github.com/konomanoasa/json-ts-mode)
 
 ## License
 

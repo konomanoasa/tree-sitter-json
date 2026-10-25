@@ -15,14 +15,19 @@ fn main() {
     println!("cargo::rerun-if-changed={}", Path::new(&headers).display());
   }
 
-  println!("cargo::rerun-if-changed=common/scanner.h");
-  println!("cargo::rerun-if-changed=common/tokens.h");
-  for (directory, library) in [
+  let grammars = [
     ("src", "tree-sitter-json"),
     ("jsonc/src", "tree-sitter-jsonc"),
     ("jsonc_trailing/src", "tree-sitter-jsonc-trailing"),
-  ] {
+  ];
+  for (directory, _) in grammars {
     println!("cargo::rerun-if-changed={directory}");
+  }
+  for header in ["common/scanner.h", "common/tokens.h"] {
+    println!("cargo::rerun-if-changed={header}");
+  }
+
+  for (directory, library) in grammars {
     let directory = Path::new(directory);
     build
       .clone()

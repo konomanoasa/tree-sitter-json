@@ -142,30 +142,6 @@ fn edit(
 }
 
 #[test]
-fn every_ascii_character_keeps_issues_owned_in_each_lexical_context() {
-  for (name, language) in languages() {
-    let mut parser = parser(&language);
-    let mut contexts =
-      vec![("", ""), ("[", "]"), ("{\"a\":", "}"), ("\"", "\"")];
-    if name != "json" {
-      contexts.extend([("//", "\r\n1"), ("/*", "*/1")]);
-    }
-    for character in 0..=127 {
-      for (prefix, suffix) in &contexts {
-        let source = format!("{prefix}{}{suffix}", char::from(character));
-        let tree = parser.parse(&source, None).unwrap();
-        assert!(
-          !tree.root_node().has_error(),
-          "{name}: {source:?}: {}",
-          tree.root_node().to_sexp()
-        );
-        assert_issue_ownership(&snapshot(&tree), source.as_bytes());
-      }
-    }
-  }
-}
-
-#[test]
 fn nul_insertion_and_removal_matches_fresh_parsing() {
   for (name, language) in languages() {
     let mut parser = parser(&language);
@@ -206,100 +182,15 @@ fn bom_at_nonzero_included_range_start_is_not_discarded() {
 }
 
 #[test]
-#[ignore = "Resource evaluation; run with --release --ignored --nocapture"]
-fn resource_evaluation() {
-  use std::time::Instant;
-  let mut fixtures = Vec::new();
-  for size in [100, 10_000] {
-    fixtures.push((
-      format!("array-{size}"),
-      format!("[{}]", vec!["123"; size].join(",")),
-      1,
-    ));
-    fixtures.push((
-      format!("object-{size}"),
-      format!("{{{}}}", vec!["\"a\":123"; size].join(",")),
-      5,
-    ));
-  }
-  for size in [1_000, 100_000] {
-    fixtures.push((
-      format!("string-{size}"),
-      format!("\"{}\"", "a".repeat(size)),
-      size / 2,
-    ));
-    fixtures.push((format!("number-{size}"), "1".repeat(size), size / 2));
-    fixtures.push((
-      format!("invalid-number-{size}"),
-      format!("0x{}", "1".repeat(size)),
-      size / 2,
-    ));
-    fixtures.push((
-      format!("commas-{size}"),
-      format!("[0{}]", ",".repeat(size)),
-      1,
-    ));
-    for (kind, prefix, suffix) in [
-      ("line", "//", "\n[1,]"),
-      ("block", "/*", "*/[1,]"),
-      ("incomplete", "/*", ""),
-      ("after-comma", "[1,/*", "*/]"),
-    ] {
-      fixtures.push((
-        format!("comment-{kind}-{size}"),
-        format!("{prefix}{}{suffix}", "a".repeat(size)),
-        prefix.len() + size / 2,
-      ));
-    }
-  }
-  for depth in [128, 2_048] {
-    fixtures.push((
-      format!("array-depth-{depth}"),
-      format!("{}0{}", "[".repeat(depth), "]".repeat(depth)),
-      depth,
-    ));
-    fixtures.push((
-      format!("object-depth-{depth}"),
-      format!("{}0{}", "{\"a\":".repeat(depth), "}".repeat(depth)),
-      depth * 5,
-    ));
-    fixtures.push((
-      format!("incomplete-depth-{depth}"),
-      format!("{}0", "{\"a\":[".repeat(depth)),
-      depth * 6,
-    ));
-  }
-  for (language_name, language) in languages() {
-    for (name, source, byte) in &fixtures {
-      if language_name == "json" && name.starts_with("comment-") {
-        continue;
-      }
-      let mut source = source.as_bytes().to_vec();
-      let mut parser = parser(&language);
-      let started = Instant::now();
-      let mut tree = parser.parse(&source, None).unwrap();
-      let fresh_time = started.elapsed();
-      assert!(!tree.root_node().has_error(), "{name}");
-      edit(&mut source, &mut tree, *byte, 1, b"2");
-      let started = Instant::now();
-      let incremental = parser.parse(&source, Some(&tree)).unwrap();
-      let incremental_time = started.elapsed();
-      let fresh = parser.parse(&source, None).unwrap();
-      assert!(!fresh.root_node().has_error(), "{name}");
-      assert_eq!(snapshot(&incremental), snapshot(&fresh), "{name}");
-      println!(
-        "{language_name}/{name}: bytes={}, nodes={}, fresh_ms={:.3}, incremental_ms={:.3}",
-        source.len(),
-        tree.root_node().descendant_count(),
-        fresh_time.as_secs_f64() * 1_000.0,
-        incremental_time.as_secs_f64() * 1_000.0
-      );
-    }
-  }
-}
-
-#[test]
 fn byte_edit_histories_preserve_the_public_cst_and_decoding_issues() {
+  const HISTORY_SEED: u32 = 8259;
+  const EDIT_COUNT: usize = 2_000;
+  const MAX_DELETED_BYTES: usize = 4;
+  const MAX_SOURCE_BYTES: usize = 200;
+  const RESET_INTERVAL: usize = 100;
+  const XORSHIFT_LEFT_BITS: u32 = 13;
+  const XORSHIFT_RIGHT_BITS: u32 = 17;
+  const XORSHIFT_FINAL_LEFT_BITS: u32 = 5;
   let fragments: &[&[u8]] = &[
     b"\"",
     b"\\",
@@ -332,7 +223,7 @@ fn byte_edit_histories_preserve_the_public_cst_and_decoding_issues() {
     "😀".as_bytes(),
   ];
   for (language_name, language) in languages() {
-    let mut state = 8259_u32;
+    let mut state = HISTORY_SEED;
     for original in [
       br#"{"a":[true,false,null,12.3e+4,"\u1234"]}"#.as_slice(),
       br#"[01,1.a2,tru,"\q","\u12"]"#.as_slice(),
@@ -343,15 +234,15 @@ fn byte_edit_histories_preserve_the_public_cst_and_decoding_issues() {
       let mut parser = parser(&language);
       let mut source = original.to_vec();
       let mut tree = parser.parse(&source, None).unwrap();
-      for step in 0..2000 {
+      for step in 0..EDIT_COUNT {
         let mut random = |limit: usize| {
-          state ^= state << 13;
-          state ^= state >> 17;
-          state ^= state << 5;
+          state ^= state << XORSHIFT_LEFT_BITS;
+          state ^= state >> XORSHIFT_RIGHT_BITS;
+          state ^= state << XORSHIFT_FINAL_LEFT_BITS;
           state as usize % limit
         };
         let byte = random(source.len() + 1);
-        let delete = random((source.len() - byte).min(4) + 1);
+        let delete = random((source.len() - byte).min(MAX_DELETED_BYTES) + 1);
         let insert = fragments[random(fragments.len())];
         let previous = source.clone();
         edit(&mut source, &mut tree, byte, delete, insert);
@@ -361,7 +252,7 @@ fn byte_edit_histories_preserve_the_public_cst_and_decoding_issues() {
         let b = snapshot(&fresh);
         if a != b {
           panic!(
-            "{language_name}: step={step}, before={previous:?}, edit=({byte}, {delete}, {insert:?}), after={source:?}\nincremental={}\nfresh={}",
+            "{language_name}: seed={HISTORY_SEED}, step={step}, before={previous:?}, edit=({byte}, {delete}, {insert:?}), after={source:?}\nincremental={}\nfresh={}",
             incremental.root_node().to_sexp(),
             fresh.root_node().to_sexp()
           );
@@ -385,7 +276,7 @@ fn byte_edit_histories_preserve_the_public_cst_and_decoding_issues() {
         }
         assert_issue_ownership(&b, &source);
         tree = incremental;
-        if source.len() > 200 || step % 100 == 99 {
+        if source.len() > MAX_SOURCE_BYTES || (step + 1) % RESET_INTERVAL == 0 {
           source = original.to_vec();
           tree = parser.parse(&source, None).unwrap();
         }

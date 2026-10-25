@@ -1,156 +1,4 @@
 ==================
-Missing separators retain later values and members
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-==================
-{"a": [1 true] "b" 2}
----
-(json_text
-  (value
-    (object
-      (member
-        name: (string (char (unescaped)))
-        value: (value
-          (array
-            (value (number (int (digit1_9))))
-            issue: (syntax_issue (invalid_syntax (missing_value_separator)))
-            (value))))
-      issue: (syntax_issue (invalid_syntax (missing_value_separator)))
-      (member
-        name: (string (char (unescaped)))
-        issue: (syntax_issue (invalid_syntax (missing_name_separator)))
-        value: (value (number (int (digit1_9))))))))
-
-==================
-Missing member values preserve the following names and colons
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-==================
-[{"a":
-"b":1},{"a" "b":1},{"a": 1:2}]
----
-(json_text
-  (value
-    (array
-      (value
-        (object
-          (member name: (string (char (unescaped)))
-            issue: (syntax_issue (invalid_syntax (missing_value))))
-          issue: (syntax_issue (invalid_syntax (missing_value_separator)))
-          (member name: (string (char (unescaped)))
-            value: (value (number (int (digit1_9)))))))
-      (value
-        (object
-          (member name: (string (char (unescaped)))
-            issue: (syntax_issue (invalid_syntax (missing_name_separator)))
-            issue: (syntax_issue (invalid_syntax (missing_value))))
-          issue: (syntax_issue (invalid_syntax (missing_value_separator)))
-          (member name: (string (char (unescaped)))
-            value: (value (number (int (digit1_9)))))))
-      (value
-        (object
-          (member name: (string (char (unescaped)))
-            issue: (syntax_issue (invalid_syntax (missing_value))))
-          issue: (syntax_issue (invalid_syntax (missing_value_separator)))
-          (member
-            issue: (syntax_issue (invalid_syntax (invalid_member_name
-              (value (number (int (digit1_9)))))))
-            value: (value (number (int (digit1_9))))))))))
-
-==================
-Invalid names keep structured values
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-==================
-{true: 1, []: null, raw: false, tru: true}
----
-(json_text
-  (value
-    (object
-      (member
-        issue: (syntax_issue (invalid_syntax (invalid_member_name (value))))
-        value: (value (number (int (digit1_9)))))
-      (member
-        issue: (syntax_issue (invalid_syntax (invalid_member_name (value (array)))))
-        value: (value))
-      (member
-        issue: (syntax_issue (invalid_syntax (invalid_member_name)))
-        value: (value))
-      (member
-        issue: (syntax_issue (invalid_syntax (invalid_member_name)))
-        value: (value)))))
-
-==================
-Ancestor closing preserves the outer member
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-==================
-{"a": [1}
----
-(json_text
-  (value
-    (object
-      (member
-        name: (string (char (unescaped)))
-        value: (value
-          (array
-            (value (number (int (digit1_9))))
-            issue: (syntax_issue (invalid_syntax (missing_array_close)))))))))
-
-==================
-Unexpected values retain their normal structures
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-==================
-{1} []
----
-(json_text
-  (value
-    (object
-      issue: (syntax_issue
-        (invalid_syntax
-          (unexpected_value (value (number (int (digit1_9)))))))))
-  issue: (syntax_issue (invalid_syntax (unexpected_value (value (array))))))
-
-==================
-EOF after an object comma requires a member and closing
-:language(json)
-:language(jsonc)
-==================
-{"a": 1,
----
-(json_text
-  (value
-    (object
-      (member name: (string (char (unescaped))) value: (value (number (int (digit1_9)))))
-      issue: (syntax_issue (incomplete_syntax (missing_member)))
-      issue: (syntax_issue (incomplete_syntax (missing_object_close))))))
-
-==================
-Colon after a container value starts another member with missing comma and name
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-==================
-{"a":[1] :2}
----
-(json_text
-  (value
-    (object
-      (member
-        name: (string (char (unescaped)))
-        value: (value (array (value (number (int (digit1_9)))))))
-      issue: (syntax_issue (invalid_syntax (missing_value_separator)))
-      (member
-        issue: (syntax_issue (invalid_syntax (missing_member_name)))
-        value: (value (number (int (digit1_9))))))))
-
-==================
 Object members, fields, strings and literals
 :language(json)
 :language(jsonc)
@@ -472,6 +320,197 @@ Member recovery preserves normal values: {"a":"b","c":1}
 0:14 - 0:15         "}"
 
 ==================
+Object trailing comma follows the selected language in jsonc_trailing
+:language(jsonc_trailing)
+:cst
+==================
+{"a":1,}
+---
+0:0 - 0:8   json_text
+0:0 - 0:8     value
+0:0 - 0:8       object
+0:0 - 0:1         "{"
+0:1 - 0:6         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:6           value: value
+0:5 - 0:6             number
+0:5 - 0:6               int
+0:5 - 0:6                 digit1_9 `1`
+0:6 - 0:7         ","
+0:7 - 0:8         "}"
+
+==================
+Object block comment before closing follows the selected language in jsonc_trailing
+:language(jsonc_trailing)
+:cst
+==================
+{"a":1,/*x*/}
+---
+0:0  - 0:13   json_text
+0:0  - 0:13     value
+0:0  - 0:13       object
+0:0  - 0:1          "{"
+0:1  - 0:6          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:5  - 0:6            value: value
+0:5  - 0:6              number
+0:5  - 0:6                int
+0:5  - 0:6                  digit1_9 `1`
+0:6  - 0:7          ","
+0:7  - 0:12         multi_line_comment
+0:7  - 0:9            "/*"
+0:9  - 0:10           comment_text `x`
+0:10 - 0:12           "*/"
+0:12 - 0:13         "}"
+==================
+Missing separators retain later values and members
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{"a": [1 true] "b" 2}
+---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        value: (value
+          (array
+            (value (number (int (digit1_9))))
+            issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+            (value))))
+      issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+      (member
+        name: (string (char (unescaped)))
+        issue: (syntax_issue (invalid_syntax (missing_name_separator)))
+        value: (value (number (int (digit1_9))))))))
+
+==================
+Missing member values preserve the following names and colons
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+[{"a":
+"b":1},{"a" "b":1},{"a": 1:2}]
+---
+(json_text
+  (value
+    (array
+      (value
+        (object
+          (member name: (string (char (unescaped)))
+            issue: (syntax_issue (invalid_syntax (missing_value))))
+          issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+          (member name: (string (char (unescaped)))
+            value: (value (number (int (digit1_9)))))))
+      (value
+        (object
+          (member name: (string (char (unescaped)))
+            issue: (syntax_issue (invalid_syntax (missing_name_separator)))
+            issue: (syntax_issue (invalid_syntax (missing_value))))
+          issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+          (member name: (string (char (unescaped)))
+            value: (value (number (int (digit1_9)))))))
+      (value
+        (object
+          (member name: (string (char (unescaped)))
+            issue: (syntax_issue (invalid_syntax (missing_value))))
+          issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+          (member
+            issue: (syntax_issue (invalid_syntax (invalid_member_name
+              (value (number (int (digit1_9)))))))
+            value: (value (number (int (digit1_9))))))))))
+
+==================
+Invalid names keep structured values
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{true: 1, []: null, raw: false, tru: true}
+---
+(json_text
+  (value
+    (object
+      (member
+        issue: (syntax_issue (invalid_syntax (invalid_member_name (value))))
+        value: (value (number (int (digit1_9)))))
+      (member
+        issue: (syntax_issue (invalid_syntax (invalid_member_name (value (array)))))
+        value: (value))
+      (member
+        issue: (syntax_issue (invalid_syntax (invalid_member_name)))
+        value: (value))
+      (member
+        issue: (syntax_issue (invalid_syntax (invalid_member_name)))
+        value: (value)))))
+
+==================
+Ancestor closing preserves the outer member
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{"a": [1}
+---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        value: (value
+          (array
+            (value (number (int (digit1_9))))
+            issue: (syntax_issue (invalid_syntax (missing_array_close)))))))))
+
+==================
+Unexpected values retain their normal structures
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{1} []
+---
+(json_text
+  (value
+    (object
+      issue: (syntax_issue
+        (invalid_syntax
+          (unexpected_value (value (number (int (digit1_9)))))))))
+  issue: (syntax_issue (invalid_syntax (unexpected_value (value (array))))))
+
+==================
+Colon after a container value starts another member with missing comma and name
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+{"a":[1] :2}
+---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        value: (value (array (value (number (int (digit1_9)))))))
+      issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+      (member
+        issue: (syntax_issue (invalid_syntax (missing_member_name)))
+        value: (value (number (int (digit1_9))))))))
+
+==================
 Member value before closing
 :language(json)
 :language(jsonc)
@@ -495,33 +534,6 @@ Member value before closing
 0:5 - 0:5             invalid_syntax
 0:5 - 0:5               missing_value
 0:5 - 0:6         "}"
-
-==================
-Member value at EOF
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-:cst
-==================
-{"a":
----
-0:0 - 0:5   json_text
-0:0 - 0:5     value
-0:0 - 0:5       object
-0:0 - 0:1         "{"
-0:1 - 0:5         member
-0:1 - 0:4           name: string
-0:1 - 0:2             "\""
-0:2 - 0:3             char
-0:2 - 0:3               unescaped `a`
-0:3 - 0:4             "\""
-0:4 - 0:5           ":"
-0:5 - 0:5           issue: syntax_issue
-0:5 - 0:5             incomplete_syntax
-0:5 - 0:5               missing_value
-0:5 - 0:5         issue: syntax_issue
-0:5 - 0:5           incomplete_syntax
-0:5 - 0:5             missing_object_close
 
 ==================
 Missing colon
@@ -932,35 +944,6 @@ Object value without a member
 0:1 - 0:2                   int
 0:1 - 0:2                     digit1_9 `1`
 0:2 - 0:3         "}"
-
-==================
-Independent missing member components at EOF
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-:cst
-==================
-{"a"
----
-0:0 - 0:4   json_text
-0:0 - 0:4     value
-0:0 - 0:4       object
-0:0 - 0:1         "{"
-0:1 - 0:4         member
-0:1 - 0:4           name: string
-0:1 - 0:2             "\""
-0:2 - 0:3             char
-0:2 - 0:3               unescaped `a`
-0:3 - 0:4             "\""
-0:4 - 0:4           issue: syntax_issue
-0:4 - 0:4             incomplete_syntax
-0:4 - 0:4               missing_name_separator
-0:4 - 0:4           issue: syntax_issue
-0:4 - 0:4             incomplete_syntax
-0:4 - 0:4               missing_value
-0:4 - 0:4         issue: syntax_issue
-0:4 - 0:4           incomplete_syntax
-0:4 - 0:4             missing_object_close
 
 ==================
 Independent missing member components before closing
@@ -2087,37 +2070,6 @@ Object duplicate trailing comma without trailing commas
 0:8 - 0:9         "}"
 
 ==================
-Object comma at EOF without trailing commas
-:language(json)
-:language(jsonc)
-:cst
-==================
-{"a":1,
----
-0:0 - 0:7   json_text
-0:0 - 0:7     value
-0:0 - 0:7       object
-0:0 - 0:1         "{"
-0:1 - 0:6         member
-0:1 - 0:4           name: string
-0:1 - 0:2             "\""
-0:2 - 0:3             char
-0:2 - 0:3               unescaped `a`
-0:3 - 0:4             "\""
-0:4 - 0:5           ":"
-0:5 - 0:6           value: value
-0:5 - 0:6             number
-0:5 - 0:6               int
-0:5 - 0:6                 digit1_9 `1`
-0:6 - 0:7         ","
-0:7 - 0:7         issue: syntax_issue
-0:7 - 0:7           incomplete_syntax
-0:7 - 0:7             missing_member
-0:7 - 0:7         issue: syntax_issue
-0:7 - 0:7           incomplete_syntax
-0:7 - 0:7             missing_object_close
-
-==================
 Ancestor object closing after an array comma without trailing commas
 :language(json)
 :language(jsonc)
@@ -2217,31 +2169,6 @@ Object block comment before closing follows the selected language without traili
 0:12 - 0:13         "}"
 
 ==================
-Object trailing comma follows the selected language in jsonc_trailing
-:language(jsonc_trailing)
-:cst
-==================
-{"a":1,}
----
-0:0 - 0:8   json_text
-0:0 - 0:8     value
-0:0 - 0:8       object
-0:0 - 0:1         "{"
-0:1 - 0:6         member
-0:1 - 0:4           name: string
-0:1 - 0:2             "\""
-0:2 - 0:3             char
-0:2 - 0:3               unescaped `a`
-0:3 - 0:4             "\""
-0:4 - 0:5           ":"
-0:5 - 0:6           value: value
-0:5 - 0:6             number
-0:5 - 0:6               int
-0:5 - 0:6                 digit1_9 `1`
-0:6 - 0:7         ","
-0:7 - 0:8         "}"
-
-==================
 Object duplicate trailing comma in jsonc_trailing
 :language(jsonc_trailing)
 :cst
@@ -2269,33 +2196,6 @@ Object duplicate trailing comma in jsonc_trailing
 0:7 - 0:8             unexpected_separator
 0:7 - 0:8               ","
 0:8 - 0:9         "}"
-
-==================
-Object comma at EOF in jsonc_trailing
-:language(jsonc_trailing)
-:cst
-==================
-{"a":1,
----
-0:0 - 0:7   json_text
-0:0 - 0:7     value
-0:0 - 0:7       object
-0:0 - 0:1         "{"
-0:1 - 0:6         member
-0:1 - 0:4           name: string
-0:1 - 0:2             "\""
-0:2 - 0:3             char
-0:2 - 0:3               unescaped `a`
-0:3 - 0:4             "\""
-0:4 - 0:5           ":"
-0:5 - 0:6           value: value
-0:5 - 0:6             number
-0:5 - 0:6               int
-0:5 - 0:6                 digit1_9 `1`
-0:6 - 0:7         ","
-0:7 - 0:7         issue: syntax_issue
-0:7 - 0:7           incomplete_syntax
-0:7 - 0:7             missing_object_close
 
 ==================
 Ancestor object closing after an array comma in jsonc_trailing
@@ -2357,30 +2257,129 @@ Object closing after a comma and a control in jsonc_trailing
 0:8 - 0:9         "}"
 
 ==================
-Object block comment before closing follows the selected language in jsonc_trailing
+EOF after an object comma requires a member and closing
+:language(json)
+:language(jsonc)
+==================
+{"a": 1,
+---
+(json_text
+  (value
+    (object
+      (member name: (string (char (unescaped))) value: (value (number (int (digit1_9)))))
+      issue: (syntax_issue (incomplete_syntax (missing_member)))
+      issue: (syntax_issue (incomplete_syntax (missing_object_close))))))
+
+==================
+Member value at EOF
+:language(json)
+:language(jsonc)
 :language(jsonc_trailing)
 :cst
 ==================
-{"a":1,/*x*/}
+{"a":
 ---
-0:0  - 0:13   json_text
-0:0  - 0:13     value
-0:0  - 0:13       object
-0:0  - 0:1          "{"
-0:1  - 0:6          member
-0:1  - 0:4            name: string
-0:1  - 0:2              "\""
-0:2  - 0:3              char
-0:2  - 0:3                unescaped `a`
-0:3  - 0:4              "\""
-0:4  - 0:5            ":"
-0:5  - 0:6            value: value
-0:5  - 0:6              number
-0:5  - 0:6                int
-0:5  - 0:6                  digit1_9 `1`
-0:6  - 0:7          ","
-0:7  - 0:12         multi_line_comment
-0:7  - 0:9            "/*"
-0:9  - 0:10           comment_text `x`
-0:10 - 0:12           "*/"
-0:12 - 0:13         "}"
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       object
+0:0 - 0:1         "{"
+0:1 - 0:5         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:5           issue: syntax_issue
+0:5 - 0:5             incomplete_syntax
+0:5 - 0:5               missing_value
+0:5 - 0:5         issue: syntax_issue
+0:5 - 0:5           incomplete_syntax
+0:5 - 0:5             missing_object_close
+
+==================
+Independent missing member components at EOF
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+{"a"
+---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       object
+0:0 - 0:1         "{"
+0:1 - 0:4         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:4           issue: syntax_issue
+0:4 - 0:4             incomplete_syntax
+0:4 - 0:4               missing_name_separator
+0:4 - 0:4           issue: syntax_issue
+0:4 - 0:4             incomplete_syntax
+0:4 - 0:4               missing_value
+0:4 - 0:4         issue: syntax_issue
+0:4 - 0:4           incomplete_syntax
+0:4 - 0:4             missing_object_close
+
+==================
+Object comma at EOF without trailing commas
+:language(json)
+:language(jsonc)
+:cst
+==================
+{"a":1,
+---
+0:0 - 0:7   json_text
+0:0 - 0:7     value
+0:0 - 0:7       object
+0:0 - 0:1         "{"
+0:1 - 0:6         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:6           value: value
+0:5 - 0:6             number
+0:5 - 0:6               int
+0:5 - 0:6                 digit1_9 `1`
+0:6 - 0:7         ","
+0:7 - 0:7         issue: syntax_issue
+0:7 - 0:7           incomplete_syntax
+0:7 - 0:7             missing_member
+0:7 - 0:7         issue: syntax_issue
+0:7 - 0:7           incomplete_syntax
+0:7 - 0:7             missing_object_close
+
+==================
+Object comma at EOF in jsonc_trailing
+:language(jsonc_trailing)
+:cst
+==================
+{"a":1,
+---
+0:0 - 0:7   json_text
+0:0 - 0:7     value
+0:0 - 0:7       object
+0:0 - 0:1         "{"
+0:1 - 0:6         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:6           value: value
+0:5 - 0:6             number
+0:5 - 0:6               int
+0:5 - 0:6                 digit1_9 `1`
+0:6 - 0:7         ","
+0:7 - 0:7         issue: syntax_issue
+0:7 - 0:7           incomplete_syntax
+0:7 - 0:7             missing_object_close

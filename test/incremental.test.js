@@ -1,7 +1,50 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { grammars } from "../scripts/tree-sitter.js";
-import { applyEdits, assertEditHistory, parse } from "./support/parser.js";
+import {
+  applyEdits,
+  assertEditHistory,
+  assertIncrementalEqualsFresh,
+  parse,
+} from "./support/parser.js";
+
+for (const { name: language } of grammars) {
+  for (const [prefix, suffix] of [
+    ['"a', 'b"'],
+    ['"\\', 'b"'],
+    ["1.", "2"],
+    ["12", "3"],
+    ["{", '"a":1}'],
+    ...(language === "json"
+      ? []
+      : [
+          ["/*", "*/1"],
+          ["//", "\r\n1"],
+        ]),
+  ]) {
+    test(`${language}: splitting a character merges the preceding decoding issue after ${JSON.stringify(prefix)}`, () => {
+      const start = Buffer.byteLength(prefix);
+      const source = Buffer.concat([
+        Buffer.from(prefix),
+        Buffer.from([255]),
+        Buffer.from(`é${suffix}`),
+      ]);
+      const edits = [{ byte: start + 2, deleteBytes: 1, insert: "" }];
+      const result = assertIncrementalEqualsFresh(
+        source,
+        edits,
+        applyEdits(source, edits),
+        language,
+      );
+      assert.deepEqual(
+        result.issues
+          .filter(([, , reason]) => reason === "invalid_encoding")
+          .map(([, , , start, end]) => [start, end]),
+        [[start, start + 2]],
+      );
+    });
+  }
+}
 
 for (const { name: language } of grammars) {
   for (const source of [
@@ -149,4 +192,94 @@ for (const { name: language } of grammars) {
       assertEditHistory({ source, edits }, language);
     }
   });
+}
+
+test("adding and removing the array closing preserves incremental structure", () => {
+  const edits = [{ byte: 1, deleteBytes: 0, insert: "]" }];
+  assertIncrementalEqualsFresh("[", edits, "[]");
+  edits.push({ byte: 1, deleteBytes: 1, insert: "" });
+  assertIncrementalEqualsFresh("[", edits, "[");
+});
+
+const collectionSize = 10_000;
+const tokenLength = 100_000;
+const nestingDepth = 128;
+const unfinishedNestingDepth = 32;
+const objectPrefix = '{"a":';
+const mixedPrefix = '{"a":[';
+const largeInputCases = [
+  {
+    name: `array with ${collectionSize} elements`,
+    source: `[${Array(collectionSize).fill("123").join(",")}]`,
+    byte: 1,
+  },
+  {
+    name: `object with ${collectionSize} members`,
+    source: `{${Array(collectionSize).fill('"a":123').join(",")}}`,
+    byte: 5,
+  },
+  {
+    name: `string of ${tokenLength} characters`,
+    source: `"${"a".repeat(tokenLength)}"`,
+    byte: tokenLength / 2,
+  },
+  {
+    name: `number of ${tokenLength} digits`,
+    source: "1".repeat(tokenLength),
+    byte: tokenLength / 2,
+  },
+  {
+    name: `invalid number of ${tokenLength} digits`,
+    source: `0x${"1".repeat(tokenLength)}`,
+    byte: tokenLength / 2,
+  },
+  {
+    name: `${tokenLength} repeated commas`,
+    source: `[0${",".repeat(tokenLength)}]`,
+    byte: 1,
+  },
+  {
+    name: `arrays nested ${nestingDepth} levels`,
+    source: `${"[".repeat(nestingDepth)}0${"]".repeat(nestingDepth)}`,
+    byte: nestingDepth,
+  },
+  {
+    name: `objects nested ${nestingDepth} levels`,
+    source: `${objectPrefix.repeat(nestingDepth)}0${"}".repeat(nestingDepth)}`,
+    byte: nestingDepth * objectPrefix.length,
+  },
+  {
+    name: `unfinished containers nested ${unfinishedNestingDepth} levels`,
+    source: `${mixedPrefix.repeat(unfinishedNestingDepth)}0`,
+    byte: unfinishedNestingDepth * mixedPrefix.length,
+  },
+];
+
+for (const { name: language } of grammars) {
+  const cases = [...largeInputCases];
+  if (language !== "json") {
+    for (const [name, prefix, suffix] of [
+      ["line comment", "//", "\n[1,]"],
+      ["block comment", "/*", "*/[1,]"],
+      ["unfinished comment", "/*", ""],
+      ["comment after comma", "[1,/*", "*/]"],
+    ]) {
+      cases.push({
+        name: `${name} of ${tokenLength} characters`,
+        source: `${prefix}${"a".repeat(tokenLength)}${suffix}`,
+        byte: prefix.length + tokenLength / 2,
+      });
+    }
+  }
+  for (const { name, source, byte } of cases) {
+    test(`${language}: editing ${name} preserves the public CST and ranges`, () => {
+      assert.equal(parse(source, [], language).hasError, false);
+      const edits = [{ byte, deleteBytes: 1, insert: "2" }];
+      const fresh = parse(applyEdits(source, edits), [], language);
+      const incremental = parse(source, edits, language);
+      assert.equal(fresh.hasError, false);
+      assert.equal(incremental.hasError, false);
+      assert.deepEqual(incremental.nodes, fresh.nodes);
+    });
+  }
 }

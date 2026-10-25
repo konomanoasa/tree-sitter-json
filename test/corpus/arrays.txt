@@ -1,19 +1,4 @@
 ==================
-Duplicate and trailing commas are actual source
-:language(json)
-:language(jsonc)
-==================
-[1,,2,]
----
-(json_text
-  (value
-    (array
-      (value (number (int (digit1_9))))
-      issue: (syntax_issue (invalid_syntax (unexpected_separator)))
-      (value (number (int (digit1_9))))
-      issue: (syntax_issue (invalid_syntax (unexpected_separator))))))
-
-==================
 Empty array has no syntax issues
 :language(json)
 :language(jsonc)
@@ -29,21 +14,81 @@ Empty array has no syntax issues
 0:1 - 0:2         "]"
 
 ==================
-Unfinished array retains its opening and missing closing position
-:language(json)
-:language(jsonc)
+Array trailing comma follows the selected language in jsonc_trailing
 :language(jsonc_trailing)
 :cst
 ==================
-[
+[1,]
 ---
-0:0 - 0:1   json_text
-0:0 - 0:1     value
-0:0 - 0:1       array
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       array
 0:0 - 0:1         "["
-0:1 - 0:1         issue: syntax_issue
-0:1 - 0:1           incomplete_syntax
-0:1 - 0:1             missing_array_close
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         ","
+0:3 - 0:4         "]"
+
+==================
+Block comment before closing follows the selected language in jsonc_trailing
+:language(jsonc_trailing)
+:cst
+==================
+[1,/*x*/]
+---
+0:0 - 0:9   json_text
+0:0 - 0:9     value
+0:0 - 0:9       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         ","
+0:3 - 0:8         multi_line_comment
+0:3 - 0:5           "/*"
+0:5 - 0:6           comment_text `x`
+0:6 - 0:8           "*/"
+0:8 - 0:9         "]"
+
+==================
+Line comment before closing follows the selected language in jsonc_trailing
+:language(jsonc_trailing)
+:cst
+==================
+[1,//x
+]
+---
+0:0 - 1:1   json_text
+0:0 - 1:1     value
+0:0 - 1:1       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         ","
+0:3 - 0:6         single_line_comment
+0:3 - 0:5           "//"
+0:5 - 0:6           comment_text `x`
+1:0 - 1:1         "]"
+
+==================
+Duplicate and trailing commas are actual source
+:language(json)
+:language(jsonc)
+==================
+[1,,2,]
+---
+(json_text
+  (value
+    (array
+      (value (number (int (digit1_9))))
+      issue: (syntax_issue (invalid_syntax (unexpected_separator)))
+      (value (number (int (digit1_9))))
+      issue: (syntax_issue (invalid_syntax (unexpected_separator))))))
 
 ==================
 Missing array comma
@@ -318,30 +363,6 @@ Array duplicate trailing comma without trailing commas
 0:4 - 0:5         "]"
 
 ==================
-Array comma at EOF without trailing commas
-:language(json)
-:language(jsonc)
-:cst
-==================
-[1,
----
-0:0 - 0:3   json_text
-0:0 - 0:3     value
-0:0 - 0:3       array
-0:0 - 0:1         "["
-0:1 - 0:2         value
-0:1 - 0:2           number
-0:1 - 0:2             int
-0:1 - 0:2               digit1_9 `1`
-0:2 - 0:3         ","
-0:3 - 0:3         issue: syntax_issue
-0:3 - 0:3           incomplete_syntax
-0:3 - 0:3             missing_value
-0:3 - 0:3         issue: syntax_issue
-0:3 - 0:3           incomplete_syntax
-0:3 - 0:3             missing_array_close
-
-==================
 Stray closing after an array comma at EOF without trailing commas
 :language(json)
 :language(jsonc)
@@ -504,79 +525,6 @@ Line comment before closing follows the selected language without trailing comma
 1:0 - 1:1         "]"
 
 ==================
-Closed comment after comma at EOF follows the selected language without trailing commas
-:language(jsonc)
-:cst
-==================
-[1,/*x*/
----
-0:0 - 0:8   json_text
-0:0 - 0:8     value
-0:0 - 0:8       array
-0:0 - 0:1         "["
-0:1 - 0:2         value
-0:1 - 0:2           number
-0:1 - 0:2             int
-0:1 - 0:2               digit1_9 `1`
-0:2 - 0:3         ","
-0:3 - 0:8         multi_line_comment
-0:3 - 0:5           "/*"
-0:5 - 0:6           comment_text `x`
-0:6 - 0:8           "*/"
-0:8 - 0:8         issue: syntax_issue
-0:8 - 0:8           incomplete_syntax
-0:8 - 0:8             missing_value
-0:8 - 0:8         issue: syntax_issue
-0:8 - 0:8           incomplete_syntax
-0:8 - 0:8             missing_array_close
-
-==================
-Unfinished comment after comma at EOF follows the selected language without trailing commas
-:language(jsonc)
-:cst
-==================
-[1,/*
----
-0:0 - 0:5   json_text
-0:0 - 0:5     value
-0:0 - 0:5       array
-0:0 - 0:1         "["
-0:1 - 0:2         value
-0:1 - 0:2           number
-0:1 - 0:2             int
-0:1 - 0:2               digit1_9 `1`
-0:2 - 0:3         ","
-0:3 - 0:5         multi_line_comment
-0:3 - 0:5           "/*"
-0:5 - 0:5           issue: syntax_issue
-0:5 - 0:5             incomplete_syntax
-0:5 - 0:5               missing_comment_close
-0:5 - 0:5         issue: syntax_issue
-0:5 - 0:5           incomplete_syntax
-0:5 - 0:5             missing_value
-0:5 - 0:5         issue: syntax_issue
-0:5 - 0:5           incomplete_syntax
-0:5 - 0:5             missing_array_close
-
-==================
-Array trailing comma follows the selected language in jsonc_trailing
-:language(jsonc_trailing)
-:cst
-==================
-[1,]
----
-0:0 - 0:4   json_text
-0:0 - 0:4     value
-0:0 - 0:4       array
-0:0 - 0:1         "["
-0:1 - 0:2         value
-0:1 - 0:2           number
-0:1 - 0:2             int
-0:1 - 0:2               digit1_9 `1`
-0:2 - 0:3         ","
-0:3 - 0:4         "]"
-
-==================
 Array duplicate trailing comma in jsonc_trailing
 :language(jsonc_trailing)
 :cst
@@ -597,26 +545,6 @@ Array duplicate trailing comma in jsonc_trailing
 0:3 - 0:4             unexpected_separator
 0:3 - 0:4               ","
 0:4 - 0:5         "]"
-
-==================
-Array comma at EOF in jsonc_trailing
-:language(jsonc_trailing)
-:cst
-==================
-[1,
----
-0:0 - 0:3   json_text
-0:0 - 0:3     value
-0:0 - 0:3       array
-0:0 - 0:1         "["
-0:1 - 0:2         value
-0:1 - 0:2           number
-0:1 - 0:2             int
-0:1 - 0:2               digit1_9 `1`
-0:2 - 0:3         ","
-0:3 - 0:3         issue: syntax_issue
-0:3 - 0:3           incomplete_syntax
-0:3 - 0:3             missing_array_close
 
 ==================
 Stray closing after an array comma at EOF in jsonc_trailing
@@ -715,15 +643,56 @@ Array closing after a comma and a stray colon in jsonc_trailing
 0:4 - 0:5         "]"
 
 ==================
-Block comment before closing follows the selected language in jsonc_trailing
+Unfinished array retains its opening and missing closing position
+:language(json)
+:language(jsonc)
 :language(jsonc_trailing)
 :cst
 ==================
-[1,/*x*/]
+[
 ---
-0:0 - 0:9   json_text
-0:0 - 0:9     value
-0:0 - 0:9       array
+0:0 - 0:1   json_text
+0:0 - 0:1     value
+0:0 - 0:1       array
+0:0 - 0:1         "["
+0:1 - 0:1         issue: syntax_issue
+0:1 - 0:1           incomplete_syntax
+0:1 - 0:1             missing_array_close
+
+==================
+Array comma at EOF without trailing commas
+:language(json)
+:language(jsonc)
+:cst
+==================
+[1,
+---
+0:0 - 0:3   json_text
+0:0 - 0:3     value
+0:0 - 0:3       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         ","
+0:3 - 0:3         issue: syntax_issue
+0:3 - 0:3           incomplete_syntax
+0:3 - 0:3             missing_value
+0:3 - 0:3         issue: syntax_issue
+0:3 - 0:3           incomplete_syntax
+0:3 - 0:3             missing_array_close
+
+==================
+Closed comment after comma at EOF follows the selected language without trailing commas
+:language(jsonc)
+:cst
+==================
+[1,/*x*/
+---
+0:0 - 0:8   json_text
+0:0 - 0:8     value
+0:0 - 0:8       array
 0:0 - 0:1         "["
 0:1 - 0:2         value
 0:1 - 0:2           number
@@ -734,29 +703,60 @@ Block comment before closing follows the selected language in jsonc_trailing
 0:3 - 0:5           "/*"
 0:5 - 0:6           comment_text `x`
 0:6 - 0:8           "*/"
-0:8 - 0:9         "]"
+0:8 - 0:8         issue: syntax_issue
+0:8 - 0:8           incomplete_syntax
+0:8 - 0:8             missing_value
+0:8 - 0:8         issue: syntax_issue
+0:8 - 0:8           incomplete_syntax
+0:8 - 0:8             missing_array_close
 
 ==================
-Line comment before closing follows the selected language in jsonc_trailing
-:language(jsonc_trailing)
+Unfinished comment after comma at EOF follows the selected language without trailing commas
+:language(jsonc)
 :cst
 ==================
-[1,//x
-]
+[1,/*
 ---
-0:0 - 1:1   json_text
-0:0 - 1:1     value
-0:0 - 1:1       array
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       array
 0:0 - 0:1         "["
 0:1 - 0:2         value
 0:1 - 0:2           number
 0:1 - 0:2             int
 0:1 - 0:2               digit1_9 `1`
 0:2 - 0:3         ","
-0:3 - 0:6         single_line_comment
-0:3 - 0:5           "//"
-0:5 - 0:6           comment_text `x`
-1:0 - 1:1         "]"
+0:3 - 0:5         multi_line_comment
+0:3 - 0:5           "/*"
+0:5 - 0:5           issue: syntax_issue
+0:5 - 0:5             incomplete_syntax
+0:5 - 0:5               missing_comment_close
+0:5 - 0:5         issue: syntax_issue
+0:5 - 0:5           incomplete_syntax
+0:5 - 0:5             missing_value
+0:5 - 0:5         issue: syntax_issue
+0:5 - 0:5           incomplete_syntax
+0:5 - 0:5             missing_array_close
+
+==================
+Array comma at EOF in jsonc_trailing
+:language(jsonc_trailing)
+:cst
+==================
+[1,
+---
+0:0 - 0:3   json_text
+0:0 - 0:3     value
+0:0 - 0:3       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         ","
+0:3 - 0:3         issue: syntax_issue
+0:3 - 0:3           incomplete_syntax
+0:3 - 0:3             missing_array_close
 
 ==================
 Closed comment after comma at EOF follows the selected language in jsonc_trailing

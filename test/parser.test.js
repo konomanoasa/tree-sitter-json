@@ -8,6 +8,14 @@ import {
   parse,
 } from "./support/parser.js";
 
+test("a truncated UTF-8 sequence stays invalid at EOF independently of the missing quote", () => {
+  const result = parse(Buffer.from([34, 97, 195]));
+  assert.deepEqual(result.issues, [
+    ["string", "invalid_syntax", "invalid_encoding", 2, 3],
+    ["string", "incomplete_syntax", "missing_string_close", 3, 3],
+  ]);
+});
+
 for (const { name, source, expected } of [
   {
     name: "invalid integer text survives a decoding failure and later digits",
@@ -558,10 +566,3 @@ for (const { name: language } of grammars) {
     });
   }
 }
-
-test("adding and removing the array closing preserves incremental structure", () => {
-  const edits = [{ byte: 1, deleteBytes: 0, insert: "]" }];
-  assertIncrementalEqualsFresh("[", edits, "[]");
-  edits.push({ byte: 1, deleteBytes: 1, insert: "" });
-  assertIncrementalEqualsFresh("[", edits, "[");
-});

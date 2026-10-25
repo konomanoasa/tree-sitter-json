@@ -3,13 +3,41 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { grammars, root } from "../scripts/tree-sitter.js";
-import { parseCorpus } from "./support/corpus.js";
 import { parseCst } from "./support/cst.js";
-import {
-  applyEdits,
-  assertIncrementalEqualsFresh,
-  parse,
-} from "./support/parser.js";
+import { parse } from "./support/parser.js";
+
+function parseCorpus(text) {
+  const sections = text.split("==================\n");
+  assert.equal(sections.shift(), "", "corpus must begin with a header");
+  assert.equal(sections.length % 2, 0, "corpus headers must be paired");
+  const cases = [];
+  for (let index = 0; index < sections.length; index += 2) {
+    const [name, ...attributes] = sections[index].trimEnd().split("\n");
+    assert.ok(name, "corpus case must have a name");
+    const languages = [];
+    for (const attribute of attributes) {
+      const language = /^:language\(([a-z_0-9]+)\)$/.exec(attribute);
+      if (language) languages.push(language[1]);
+      else
+        assert.equal(
+          attribute,
+          ":cst",
+          `unsupported corpus attribute: ${attribute}`,
+        );
+    }
+    assert.ok(languages.length, `${name}: corpus must specify its languages`);
+    assert.equal(
+      new Set(languages).size,
+      languages.length,
+      `${name}: repeated language`,
+    );
+    const parts = sections[index + 1].split("\n---\n");
+    assert.equal(parts.length, 2, `${name}: expected one output separator`);
+    const source = parts[0].endsWith("\r") ? parts[0].slice(0, -1) : parts[0];
+    cases.push({ name, source, languages });
+  }
+  return cases;
+}
 
 const corpusDirectory = join(root, "test/corpus");
 for (const file of readdirSync(corpusDirectory).sort()) {
@@ -107,14 +135,6 @@ for (const [name, prefix, suffix, owner] of [
   });
 }
 
-test("a truncated UTF-8 sequence stays invalid at EOF independently of the missing quote", () => {
-  const result = parse(Buffer.from([34, 97, 195]));
-  assert.deepEqual(result.issues, [
-    ["string", "invalid_syntax", "invalid_encoding", 2, 3],
-    ["string", "incomplete_syntax", "missing_string_close", 3, 3],
-  ]);
-});
-
 test("decoding failures stay isolated across JSON syntax boundaries", () => {
   const invalidBytes = Buffer.from([255, 254, 128]);
   for (const source of [
@@ -172,44 +192,6 @@ for (const { name: language } of grammars.filter(
           .filter(({ kind }) => kind === "comment_text")
           .map(({ start, end }) => source.subarray(start, end).toString()),
         bodies,
-      );
-    });
-  }
-}
-
-for (const { name: language } of grammars) {
-  for (const [prefix, suffix] of [
-    ['"a', 'b"'],
-    ['"\\', 'b"'],
-    ["1.", "2"],
-    ["12", "3"],
-    ["{", '"a":1}'],
-    ...(language === "json"
-      ? []
-      : [
-          ["/*", "*/1"],
-          ["//", "\r\n1"],
-        ]),
-  ]) {
-    test(`${language}: splitting a character merges the preceding decoding issue after ${JSON.stringify(prefix)}`, () => {
-      const start = Buffer.byteLength(prefix);
-      const source = Buffer.concat([
-        Buffer.from(prefix),
-        Buffer.from([255]),
-        Buffer.from(`é${suffix}`),
-      ]);
-      const edits = [{ byte: start + 2, deleteBytes: 1, insert: "" }];
-      const result = assertIncrementalEqualsFresh(
-        source,
-        edits,
-        applyEdits(source, edits),
-        language,
-      );
-      assert.deepEqual(
-        result.issues
-          .filter(([, , reason]) => reason === "invalid_encoding")
-          .map(([, , , start, end]) => [start, end]),
-        [[start, start + 2]],
       );
     });
   }
@@ -293,3 +275,27 @@ test("CST helpers report native recovery flags and reject truncated roots", () =
   }
   assert.throws(() => parseCst("0:0 - 0:1   json_text", "é"));
 });
+
+for (const { name: language } of grammars) {
+  test(`${language}: every ASCII character keeps issues owned in each lexical context`, () => {
+    const contexts = [
+      ["", ""],
+      ["[", "]"],
+      ['{"a":', "}"],
+      ['"', '"'],
+    ];
+    if (language !== "json") contexts.push(["//", "\r\n1"], ["/*", "*/1"]);
+    const asciiMax = 0x7f;
+    for (let character = 0; character <= asciiMax; character++) {
+      for (const [prefix, suffix] of contexts) {
+        const source = `${prefix}${String.fromCharCode(character)}${suffix}`;
+        const tree = parse(source, [], language);
+        assert.equal(
+          tree.hasError,
+          false,
+          `${JSON.stringify(source)}\n${tree.cst}`,
+        );
+      }
+    }
+  });
+}

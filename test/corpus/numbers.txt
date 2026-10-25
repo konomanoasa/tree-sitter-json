@@ -1,21 +1,4 @@
 ==================
-Invalid number regions retain confirmed digits
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-==================
-[01, 0x12, 1.2.3, 1e2e3, +4]
----
-(json_text
-  (value
-    (array
-      (value (number (int issue: (syntax_issue (invalid_syntax (invalid_number (digit)))))))
-      (value (number (int issue: (syntax_issue (invalid_syntax (invalid_number (digit) (digit)))))))
-      (value (number (int (digit1_9)) (frac (digit) issue: (syntax_issue (invalid_syntax (invalid_number))) (digit))))
-      (value (number (int (digit1_9)) (exp (e) (digit) issue: (syntax_issue (invalid_syntax (invalid_number))) (digit))))
-      (value (number issue: (syntax_issue (invalid_syntax (invalid_number))) (int (digit1_9)))))))
-
-==================
 Decimal components and digits
 :language(json)
 :language(jsonc)
@@ -165,6 +148,23 @@ Exponent markers are named leaves
 0:8 - 0:9         "]"
 
 ==================
+Invalid number regions retain confirmed digits
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+==================
+[01, 0x12, 1.2.3, 1e2e3, +4]
+---
+(json_text
+  (value
+    (array
+      (value (number (int issue: (syntax_issue (invalid_syntax (invalid_number (digit)))))))
+      (value (number (int issue: (syntax_issue (invalid_syntax (invalid_number (digit) (digit)))))))
+      (value (number (int (digit1_9)) (frac (digit) issue: (syntax_issue (invalid_syntax (invalid_number))) (digit))))
+      (value (number (int (digit1_9)) (exp (e) (digit) issue: (syntax_issue (invalid_syntax (invalid_number))) (digit))))
+      (value (number issue: (syntax_issue (invalid_syntax (invalid_number))) (int (digit1_9)))))))
+
+==================
 Leading zero
 :language(json)
 :language(jsonc)
@@ -182,27 +182,6 @@ Leading zero
 0:1 - 0:2             invalid_syntax
 0:1 - 0:2               invalid_number
 0:1 - 0:2                 digit `1`
-
-==================
-Exponent at EOF
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-:cst
-==================
-1e+
----
-0:0 - 0:3   json_text
-0:0 - 0:3     value
-0:0 - 0:3       number
-0:0 - 0:1         int
-0:0 - 0:1           digit1_9 `1`
-0:1 - 0:3         exp
-0:1 - 0:2           e `e`
-0:2 - 0:3           "+"
-0:3 - 0:3           issue: syntax_issue
-0:3 - 0:3             incomplete_syntax
-0:3 - 0:3               missing_digits
 
 ==================
 Exponent ended by layout
@@ -225,23 +204,6 @@ Exponent ended by layout
 0:2 - 0:2               missing_digits
 
 ==================
-Integer digits at EOF
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-:cst
-==================
--
----
-0:0 - 0:1   json_text
-0:0 - 0:1     value
-0:0 - 0:1       number
-0:0 - 0:1         "-"
-0:1 - 0:1         issue: syntax_issue
-0:1 - 0:1           incomplete_syntax
-0:1 - 0:1             missing_digits
-
-==================
 Integer digits before fraction
 :language(json)
 :language(jsonc)
@@ -259,26 +221,6 @@ Integer digits before fraction
 0:0 - 0:2         frac
 0:0 - 0:1           "."
 0:1 - 0:2           digit `5`
-
-==================
-Fraction digits at EOF
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-:cst
-==================
-1.
----
-0:0 - 0:2   json_text
-0:0 - 0:2     value
-0:0 - 0:2       number
-0:0 - 0:1         int
-0:0 - 0:1           digit1_9 `1`
-0:1 - 0:2         frac
-0:1 - 0:2           "."
-0:2 - 0:2           issue: syntax_issue
-0:2 - 0:2             incomplete_syntax
-0:2 - 0:2               missing_digits
 
 ==================
 Fraction digits before exponent
@@ -445,3 +387,60 @@ Normal integer follows an invalid prefix
 0:2 - 0:4         int
 0:2 - 0:3           digit1_9 `1`
 0:3 - 0:4           digit `2`
+==================
+Exponent at EOF
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+1e+
+---
+0:0 - 0:3   json_text
+0:0 - 0:3     value
+0:0 - 0:3       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:3         exp
+0:1 - 0:2           e `e`
+0:2 - 0:3           "+"
+0:3 - 0:3           issue: syntax_issue
+0:3 - 0:3             incomplete_syntax
+0:3 - 0:3               missing_digits
+
+==================
+Integer digits at EOF
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+-
+---
+0:0 - 0:1   json_text
+0:0 - 0:1     value
+0:0 - 0:1       number
+0:0 - 0:1         "-"
+0:1 - 0:1         issue: syntax_issue
+0:1 - 0:1           incomplete_syntax
+0:1 - 0:1             missing_digits
+
+==================
+Fraction digits at EOF
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+1.
+---
+0:0 - 0:2   json_text
+0:0 - 0:2     value
+0:0 - 0:2       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:2         frac
+0:1 - 0:2           "."
+0:2 - 0:2           issue: syntax_issue
+0:2 - 0:2             incomplete_syntax
+0:2 - 0:2               missing_digits

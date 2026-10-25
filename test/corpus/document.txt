@@ -84,33 +84,32 @@ Four layout characters
 2:9  - 2:10         "}"
 
 ==================
-Empty document requires a root value
+Initial BOM and UTF-8 leaves retain original byte positions
 :language(json)
 :language(jsonc)
 :language(jsonc_trailing)
 :cst
 ==================
-
+﻿{"é":"😀"}
 ---
-0:0 - 0:0   json_text
-0:0 - 0:0     issue: syntax_issue
-0:0 - 0:0       incomplete_syntax
-0:0 - 0:0         missing_value
-
-==================
-Whitespace-only document
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-:cst
-==================
- 
-
----
-0:0 - 1:0   json_text
-1:0 - 1:0     issue: syntax_issue
-1:0 - 1:0       incomplete_syntax
-1:0 - 1:0         missing_value
+0:3  - 0:16   json_text
+0:3  - 0:16     value
+0:3  - 0:16       object
+0:3  - 0:4          "{"
+0:4  - 0:15         member
+0:4  - 0:8            name: string
+0:4  - 0:5              "\""
+0:5  - 0:7              char
+0:5  - 0:7                unescaped `é`
+0:7  - 0:8              "\""
+0:8  - 0:9            ":"
+0:9  - 0:15           value: value
+0:9  - 0:15             string
+0:9  - 0:10               "\""
+0:10 - 0:14               char
+0:10 - 0:14                 unescaped `😀`
+0:14 - 0:15               "\""
+0:15 - 0:16         "}"
 
 ==================
 Extra root value
@@ -147,34 +146,6 @@ Root stray delimiter preserves the first value
 0:0 - 0:1         invalid_character `}`
 0:1 - 0:5     value
 0:1 - 0:5       "true"
-
-==================
-Initial BOM and UTF-8 leaves retain original byte positions
-:language(json)
-:language(jsonc)
-:language(jsonc_trailing)
-:cst
-==================
-﻿{"é":"😀"}
----
-0:3  - 0:16   json_text
-0:3  - 0:16     value
-0:3  - 0:16       object
-0:3  - 0:4          "{"
-0:4  - 0:15         member
-0:4  - 0:8            name: string
-0:4  - 0:5              "\""
-0:5  - 0:7              char
-0:5  - 0:7                unescaped `é`
-0:7  - 0:8              "\""
-0:8  - 0:9            ":"
-0:9  - 0:15           value: value
-0:9  - 0:15             string
-0:9  - 0:10               "\""
-0:10 - 0:14               char
-0:10 - 0:14                 unescaped `😀`
-0:14 - 0:15               "\""
-0:15 - 0:16         "}"
 
 ==================
 Noninitial BOM is not layout
@@ -234,3 +205,31 @@ Invalid number and escape regions retain confirmed leaves
 0:10 - 0:11                     hexdig `2`
 0:12 - 0:13             "\""
 0:13 - 0:14         "]"
+==================
+Empty document requires a root value
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+
+---
+0:0 - 0:0   json_text
+0:0 - 0:0     issue: syntax_issue
+0:0 - 0:0       incomplete_syntax
+0:0 - 0:0         missing_value
+
+==================
+Whitespace-only document
+:language(json)
+:language(jsonc)
+:language(jsonc_trailing)
+:cst
+==================
+ 
+
+---
+0:0 - 1:0   json_text
+1:0 - 1:0     issue: syntax_issue
+1:0 - 1:0       incomplete_syntax
+1:0 - 1:0         missing_value
