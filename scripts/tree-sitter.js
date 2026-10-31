@@ -1,7 +1,6 @@
 import { spawnSync } from "node:child_process";
 import {
   cpSync,
-  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -12,8 +11,6 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { tokens } from "../common/grammar.js";
-
 const root = resolve(import.meta.dirname, "..");
 const packageName = JSON.parse(readFileSync(join(root, "package.json"), "utf8"))
   .name.split("/")
@@ -22,32 +19,11 @@ const configuration = JSON.parse(
   readFileSync(join(root, "tree-sitter.json"), "utf8"),
 );
 if (
-  !Array.isArray(configuration.grammars) ||
-  configuration.grammars.length === 0
+  configuration.grammars.length !== 1 ||
+  configuration.grammars[0].name !== "json"
 ) {
-  throw new Error("tree-sitter.json must define at least one grammar.");
+  throw new Error("tree-sitter.json must define only the json grammar.");
 }
-for (const grammar of configuration.grammars) {
-  for (const field of ["name", "path", "scope"]) {
-    if (typeof grammar?.[field] !== "string" || grammar[field].length === 0) {
-      throw new Error(
-        `tree-sitter.json grammar ${field} must be a non-empty string.`,
-      );
-    }
-  }
-}
-const grammars = Object.freeze(
-  configuration.grammars.map(
-    ({ "external-files": externalFiles, highlights, name, path, scope }) =>
-      Object.freeze({
-        externalFiles: Object.freeze([].concat(externalFiles ?? [])),
-        highlights: Object.freeze([].concat(highlights ?? [])),
-        name,
-        path,
-        scope,
-      }),
-  ),
-);
 const commandOutputLimitBytes = 256 * 1024 * 1024;
 const fuzzOutputLimitBytes = 16 * 1024 * 1024;
 const fuzzTimeoutMs = 600_000;
@@ -83,12 +59,7 @@ function copyFiles(paths, destinationRoot) {
 }
 
 function resultStatus(result) {
-  if (result.error) {
-    if (result.error.code === "ENOENT") {
-      throw new Error(missingCliMessage, { cause: result.error });
-    }
-    throw result.error;
-  }
+  if (result.error) throw result.error;
   if (result.signal) {
     process.stderr.write(`Tree-sitter CLI terminated by ${result.signal}.\n`);
     return 1;
@@ -97,26 +68,18 @@ function resultStatus(result) {
 }
 
 function createTreeSitter() {
-  const temporaryDirectory = mkdtempSync(join(tmpdir(), `${packageName}-`));
+  const directory = mkdtempSync(join(tmpdir(), `${packageName}-`));
   const cacheDirectory = join(root, "node_modules", ".cache", packageName);
-  const configDirectory = join(temporaryDirectory, "config");
-  const libraryDirectory = join(temporaryDirectory, "lib");
+  const configDirectory = join(directory, "config");
+  const libraryDirectory = join(directory, "lib");
   const treeSitterConfigDirectory = join(configDirectory, "tree-sitter");
-  const parserDirectory = join(temporaryDirectory, "parsers");
-
+  const parserDirectory = join(directory, "parsers");
   try {
     mkdirSync(cacheDirectory, { recursive: true });
     mkdirSync(libraryDirectory);
     mkdirSync(treeSitterConfigDirectory, { recursive: true });
     copyFiles(
-      [
-        "tree-sitter.json",
-        ...grammars.flatMap((grammar) => [
-          join(grammar.path, "src"),
-          ...grammar.highlights,
-          ...grammar.externalFiles,
-        ]),
-      ],
+      ["tree-sitter.json", "src", "queries"],
       join(parserDirectory, packageName),
     );
     writeFileSync(
@@ -124,24 +87,21 @@ function createTreeSitter() {
       `${JSON.stringify({ "parser-directories": [parserDirectory] }, null, 2)}\n`,
     );
   } catch (error) {
-    rmSync(temporaryDirectory, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
     throw error;
   }
-
   let closed = false;
   return Object.freeze({
-    directory: temporaryDirectory,
+    directory,
     configPath: join(treeSitterConfigDirectory, "config.json"),
     close() {
       if (!closed) {
         closed = true;
-        rmSync(temporaryDirectory, { recursive: true, force: true });
+        rmSync(directory, { recursive: true, force: true });
       }
     },
     run(arguments_, options = {}) {
-      if (closed) {
-        throw new Error("Tree-sitter runner is closed.");
-      }
+      if (closed) throw new Error("Tree-sitter runner is closed.");
       return spawnSync(treeSitterExecutable(), arguments_, {
         cwd: root,
         encoding: "utf8",
@@ -168,64 +128,23 @@ function createTreeSitter() {
   });
 }
 
-function runChecked(runner, arguments_, options = { stdio: "inherit" }) {
-  return resultStatus(runner.run(arguments_, options));
-}
-
-function generateParsers(outputRoot = root) {
-  mkdirSync(join(outputRoot, "common"), { recursive: true });
-  const names = [
-    ...tokens.map((name) =>
-      name === "null" ? "NULL_TOKEN" : name.toUpperCase(),
+function generateParser(outputRoot = root) {
+  const output = join(outputRoot, "src");
+  mkdirSync(output, { recursive: true });
+  return resultStatus(
+    spawnSync(
+      treeSitterExecutable(),
+      [
+        "generate",
+        join(root, "grammar.js"),
+        "--abi",
+        "latest",
+        "--output",
+        output,
+      ],
+      { cwd: root, windowsHide: true, stdio: "inherit" },
     ),
-    "TOKEN_COUNT",
-  ];
-  writeFileSync(
-    join(outputRoot, "common/tokens.h"),
-    `/* Generated by scripts/tree-sitter.js. */\nenum TokenType {\n${names.map((name) => `  ${name}`).join(",\n")}\n};\n`,
   );
-
-  for (const grammar of grammars) {
-    const output = join(outputRoot, grammar.path, "src");
-    mkdirSync(output, { recursive: true });
-    const status = resultStatus(
-      spawnSync(
-        treeSitterExecutable(),
-        [
-          "generate",
-          join(root, grammar.path, "grammar.js"),
-          "--abi",
-          "latest",
-          "--output",
-          output,
-        ],
-        { cwd: root, windowsHide: true, stdio: "inherit" },
-      ),
-    );
-    if (status !== 0) {
-      return status;
-    }
-  }
-  return 0;
-}
-
-function buildParsers(runner) {
-  const directory = join(root, "build");
-  mkdirSync(directory, { recursive: true });
-  for (const { name, path } of grammars) {
-    const library = join(
-      directory,
-      `${name}.${process.platform === "win32" ? "dll" : "so"}`,
-    );
-    const status = runChecked(runner, [
-      "build",
-      join(root, path),
-      "--output",
-      library,
-    ]);
-    if (status !== 0) return status;
-  }
-  return 0;
 }
 
 function testCorpus(arguments_) {
@@ -240,158 +159,107 @@ function testCorpus(arguments_) {
       "test-corpus deletes its isolated copy; --update, --debug-graph, and --open-log would lose their output.",
     );
   }
-  const testRoot = mkdtempSync(join(tmpdir(), `${packageName}-test-`));
+  const directory = mkdtempSync(join(tmpdir(), `${packageName}-test-`));
   let runner;
-
   try {
     copyFiles(
       [
         "package.json",
-        ...(existsSync(join(root, "common")) ? ["common"] : []),
-        ...grammars.flatMap(({ path, externalFiles, highlights }) => [
-          join(path, "grammar.js"),
-          join(path, "src"),
-          ...externalFiles,
-          ...highlights,
-        ]),
-        join("test", "corpus"),
+        "grammar.js",
+        "src",
+        "queries",
+        "test/corpus",
         "tree-sitter.json",
       ],
-      testRoot,
+      directory,
     );
     runner = createTreeSitter();
-    return runChecked(runner, ["test", ...arguments_], {
-      cwd: testRoot,
-      stdio: "inherit",
-    });
+    return resultStatus(
+      runner.run(["test", ...arguments_], { cwd: directory, stdio: "inherit" }),
+    );
   } finally {
-    try {
-      runner?.close();
-    } finally {
-      rmSync(testRoot, { recursive: true, force: true });
-    }
+    runner?.close();
+    rmSync(directory, { recursive: true, force: true });
   }
 }
 
-function fuzzParsers(runner, arguments_) {
+function fuzzParser(runner, arguments_) {
   const directory = mkdtempSync(join(tmpdir(), `${packageName}-fuzz-`));
   try {
-    for (const { name, path } of grammars) {
-      const library = join(
-        directory,
-        `${name}.${process.platform === "win32" ? "dll" : "so"}`,
-      );
-      const buildStatus = runChecked(runner, [
-        "build",
-        join(root, path),
-        "--output",
-        library,
-      ]);
-      if (buildStatus !== 0) return buildStatus;
-      const result = runner.run(
-        ["fuzz", "--lib-path", library, "--lang-name", name, ...arguments_],
-        {
-          encoding: "utf8",
-          maxBuffer: fuzzOutputLimitBytes,
-          timeout: fuzzTimeoutMs,
-          killSignal: "SIGKILL",
-        },
-      );
-      process.stdout.write(result.stdout ?? "");
-      process.stderr.write(result.stderr ?? "");
-      const status = resultStatus(result);
-      if (status !== 0) return status;
-      if (
-        /^[1-9][0-9]* .+ corpus tests failed fuzzing$/m.test(
-          result.stdout + result.stderr,
-        )
-      )
-        return 1;
-    }
-    return 0;
+    const library = join(
+      directory,
+      process.platform === "win32" ? "json.dll" : "json.so",
+    );
+    const built = resultStatus(
+      runner.run(["build", root, "--output", library], { stdio: "inherit" }),
+    );
+    if (built !== 0) return built;
+    const result = runner.run(
+      ["fuzz", "--lib-path", library, "--lang-name", "json", ...arguments_],
+      {
+        maxBuffer: fuzzOutputLimitBytes,
+        timeout: fuzzTimeoutMs,
+      },
+    );
+    process.stdout.write(result.stdout ?? "");
+    process.stderr.write(result.stderr ?? "");
+    const status = resultStatus(result);
+    if (status !== 0) return status;
+    return /^[1-9][0-9]* .+ corpus tests failed fuzzing$/m.test(
+      result.stdout + result.stderr,
+    )
+      ? 1
+      : 0;
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
 }
 
 function checkQueries() {
-  const configuration = JSON.parse(
-    readFileSync(join(root, ".tsqueryrc.json"), "utf8"),
-  );
-  for (const grammar of grammars) {
-    const parserAliases = { ...configuration.parser_aliases };
-    for (const { name } of grammars) {
-      if (name === grammar.name) delete parserAliases[name];
-      else parserAliases[name] = grammar.name;
-    }
-    const directories = [...new Set(grammar.highlights.map(dirname))];
-    const settings = { ...configuration, parser_aliases: parserAliases };
-    const result = spawnSync(
-      "ts_query_ls",
-      [
-        "check",
-        "--format",
-        "--config",
-        JSON.stringify(settings),
-        ...directories,
-      ],
-      {
-        cwd: root,
-        encoding: "utf8",
-        timeout: queryTimeoutMs,
-        killSignal: "SIGKILL",
-      },
-    );
-    process.stdout.write(result.stdout ?? "");
-    process.stderr.write(result.stderr ?? "");
-    if (result.error) throw result.error;
-    if (result.signal) {
-      process.stderr.write(`ts_query_ls terminated by ${result.signal}.\n`);
-      return 1;
-    }
-    if (result.status !== 0) return result.status ?? 1;
-    console.log(`${grammar.name}: reference queries passed`);
-  }
-  return 0;
+  const result = spawnSync("ts_query_ls", ["check", "--format", "queries"], {
+    cwd: root,
+    encoding: "utf8",
+    timeout: queryTimeoutMs,
+    killSignal: "SIGKILL",
+  });
+  process.stdout.write(result.stdout ?? "");
+  process.stderr.write(result.stderr ?? "");
+  return resultStatus(result);
 }
 
 function main(arguments_) {
   const [command, ...rest] = arguments_;
-  if (command === "generate-all") {
-    if (rest.length !== 0) {
-      throw new Error("Usage: node scripts/tree-sitter.js generate-all");
-    }
-    return generateParsers();
+  if (
+    ["generate", "build", "check-queries"].includes(command) &&
+    rest.length !== 0
+  ) {
+    throw new Error(`Usage: node scripts/tree-sitter.js ${command}`);
   }
-  if (command === "check-queries") {
-    if (rest.length !== 0) {
-      throw new Error("Usage: node scripts/tree-sitter.js check-queries");
-    }
-    return checkQueries();
-  }
-  if (command === "test-corpus") {
-    return testCorpus(rest);
-  }
-
+  if (command === "generate") return generateParser();
+  if (command === "check-queries") return checkQueries();
+  if (command === "test-corpus") return testCorpus(rest);
   const runner = createTreeSitter();
   try {
-    if (command === "build-all") {
-      if (rest.length !== 0) {
-        throw new Error("Usage: node scripts/tree-sitter.js build-all");
-      }
-      return buildParsers(runner);
+    if (command === "build") {
+      mkdirSync(join(root, "build"), { recursive: true });
+      const library = join(
+        root,
+        "build",
+        process.platform === "win32" ? "json.dll" : "json.so",
+      );
+      return resultStatus(
+        runner.run(["build", root, "--output", library], { stdio: "inherit" }),
+      );
     }
-    if (command === "fuzz-all") return fuzzParsers(runner, rest);
-    return runChecked(runner, arguments_);
+    if (command === "fuzz") return fuzzParser(runner, rest);
+    return resultStatus(runner.run(arguments_, { stdio: "inherit" }));
   } finally {
     runner.close();
   }
 }
 
-if (import.meta.main === undefined) {
+if (import.meta.main === undefined)
   throw new Error("Node.js 24.21.0 or later is required.");
-}
-
 if (import.meta.main) {
   try {
     process.exitCode = main(process.argv.slice(2));
@@ -401,11 +269,4 @@ if (import.meta.main) {
   }
 }
 
-export {
-  copyFiles,
-  createTreeSitter,
-  generateParsers,
-  grammars,
-  packageName,
-  root,
-};
+export { copyFiles, createTreeSitter, generateParser, packageName, root };

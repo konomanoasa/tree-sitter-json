@@ -13,37 +13,11 @@ If:
 CompileFlags:
   Add:
     - -xc-header
-    - -Wno-unused-function
 
 ---
 If:
-  PathMatch: test/[^/]*\.c
+  PathMatch: bindings/python/.*\.c
 CompileFlags:
+  CompilationDatabase: None
   Add:
-    - -Wno-unused-function
-
----
-If:
-  PathMatch:
-    - src/.*
-    - jsonc/src/.*
-    - jsonc_trailing/src/.*
-CompileFlags:
-  Add:
-    - -I.
-
----
-If:
-  PathMatch: common/scanner\.h
-CompileFlags:
-  Add:
-    - -I../src
-
----
-If:
-  PathMatch: test/scanner\.test\.c
-CompileFlags:
-  Add:
-    - -DJSON_SCANNER_SOURCE="../src/scanner.c"
-    - -DJSON_SCANNER_PREFIX=tree_sitter_json_external_scanner
-    - -I../src
+    - -I../../src

@@ -4,19 +4,7 @@
 [![crates.io](https://img.shields.io/crates/v/konomanoasa-tree-sitter-json)](https://crates.io/crates/konomanoasa-tree-sitter-json)
 [![npm](https://img.shields.io/npm/v/@konomanoasa/tree-sitter-json)](https://www.npmjs.com/package/@konomanoasa/tree-sitter-json)
 
-[Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammars for
-JSON and JSON with comments.
-
-## Grammars
-
-| Grammar | Language |
-| ------- | -------- |
-| `json`  | JSON     |
-| `jsonc` | JSONC    |
-
-## Parsing Option
-
-For JSONC with trailing commas, use `jsonc_trailing`.
+[Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammar for JSON.
 
 ## Installation
 
@@ -36,11 +24,6 @@ npm test
 
 - [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html)
 - [ECMA-404, second edition](https://ecma-international.org/publications-and-standards/standards/ecma-404/)
-- [JSONC draft](https://jsonc.org/)
-
-## Used By
-
-[json-ts-mode](https://github.com/konomanoasa/json-ts-mode)
 
 ## License
 

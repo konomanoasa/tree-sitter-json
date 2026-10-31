@@ -35,12 +35,6 @@
     "u"
   ] @string.escape)
 
-(invalid_escape
-  [
-    "\\"
-    "u"
-  ] @string.escape)
-
 (hexdig) @string.escape
 
 [
@@ -54,12 +48,6 @@
 
 (number
   "-" @number)
-
-(number
-  (syntax_issue
-    (invalid_syntax
-      (invalid_number
-        "+" @number))))
 
 (frac
   "." @number)

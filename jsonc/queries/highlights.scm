@@ -1,6 +1,0 @@
-[
-  "//"
-  "/*"
-  "*/"
-  (comment_text)
-] @comment

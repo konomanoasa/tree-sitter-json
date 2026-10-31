@@ -7,7 +7,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { generateParsers, grammars, packageName, root } from "./tree-sitter.js";
+import { generateParser, packageName, root } from "./tree-sitter.js";
 
 const generatedPaths = [
   "grammar.json",
@@ -106,8 +106,8 @@ function parseTableStorageBytes(parser, metrics, path) {
   );
 }
 
-function checkParser(grammar, generatedRoot) {
-  const parserPath = join(generatedRoot, grammar.path, "src", "parser.c");
+function checkParser(generatedRoot) {
+  const parserPath = join(generatedRoot, "src", "parser.c");
   const displayPath = relative(generatedRoot, parserPath);
   const parser = readFileSync(parserPath, "utf8");
   const metrics = {
@@ -129,7 +129,7 @@ function checkParser(grammar, generatedRoot) {
     displayPath,
   );
 
-  console.log(`${grammar.name}:`);
+  console.log("json:");
   console.log("Metric                           Actual");
   for (const [name, value] of Object.entries(metrics)) {
     console.log(`${name.padEnd(28)} ${String(value).padStart(12)}`);
@@ -146,32 +146,20 @@ function main(arguments_) {
     join(tmpdir(), `${packageName}-generated-`),
   );
   try {
-    if (generateParsers(generatedRoot) !== 0) return 1;
+    if (generateParser(generatedRoot) !== 0) return 1;
 
     let failed = false;
     const stale = [];
-    if (
-      different(
-        join(generatedRoot, "common/tokens.h"),
-        join(root, "common/tokens.h"),
-      )
-    )
-      stale.push("common/tokens.h");
-    for (const grammar of grammars) {
-      const generatedDirectory = join(generatedRoot, grammar.path, "src");
-      const actualPaths = listFiles(generatedDirectory);
-      if (JSON.stringify(actualPaths) !== JSON.stringify(generatedPaths)) {
-        console.error(`${grammar.name}: generated file manifest differs.`);
-        console.error(`Expected:\n${generatedPaths.join("\n")}`);
-        console.error(`Actual:\n${actualPaths.join("\n")}`);
-        failed = true;
-      }
-      for (const path of generatedPaths) {
-        const generatedPath = join(generatedDirectory, path);
-        const repositoryPath = join(root, grammar.path, "src", path);
-        if (different(generatedPath, repositoryPath)) {
-          stale.push(relative(root, repositoryPath));
-        }
+    const generatedDirectory = join(generatedRoot, "src");
+    const actualPaths = listFiles(generatedDirectory);
+    if (JSON.stringify(actualPaths) !== JSON.stringify(generatedPaths)) {
+      console.error("Generated file manifest differs.");
+      failed = true;
+    }
+    for (const path of generatedPaths) {
+      const repositoryPath = join(root, "src", path);
+      if (different(join(generatedDirectory, path), repositoryPath)) {
+        stale.push(relative(root, repositoryPath));
       }
     }
     if (stale.length > 0) {
@@ -181,19 +169,7 @@ function main(arguments_) {
       failed = true;
     }
 
-    const languageVersions = new Map();
-    for (const grammar of grammars) {
-      languageVersions.set(grammar.name, checkParser(grammar, generatedRoot));
-    }
-    if (new Set(languageVersions.values()).size !== 1) {
-      console.error(
-        "Generated parsers use different Tree-sitter ABI versions:",
-      );
-      for (const [name, version] of languageVersions) {
-        console.error(`  ${name}: ${version}`);
-      }
-      failed = true;
-    }
+    checkParser(generatedRoot);
     return failed ? 1 : 0;
   } finally {
     rmSync(generatedRoot, { recursive: true, force: true });

@@ -15,24 +15,9 @@ fn main() {
     println!("cargo::rerun-if-changed={}", Path::new(&headers).display());
   }
 
-  let grammars = [
-    ("src", "tree-sitter-json"),
-    ("jsonc/src", "tree-sitter-jsonc"),
-    ("jsonc_trailing/src", "tree-sitter-jsonc-trailing"),
-  ];
-  for (directory, _) in grammars {
-    println!("cargo::rerun-if-changed={directory}");
-  }
-  for header in ["common/scanner.h", "common/tokens.h"] {
-    println!("cargo::rerun-if-changed={header}");
-  }
-
-  for (directory, library) in grammars {
-    let directory = Path::new(directory);
-    build
-      .clone()
-      .include(directory)
-      .files([directory.join("parser.c"), directory.join("scanner.c")])
-      .compile(library);
-  }
+  println!("cargo::rerun-if-changed=src");
+  build
+    .include("src")
+    .file("src/parser.c")
+    .compile("tree-sitter-json");
 }

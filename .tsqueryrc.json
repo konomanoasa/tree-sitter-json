@@ -1,6 +1,8 @@
 {
-  "parser_install_directories": ["build", "."],
-  "language_retrieval_patterns": ["(jsonc)/queries/[^/]+[.]scm$"],
+  "parser_install_directories": [
+    "build",
+    "."
+  ],
   "valid_captures": {
     "highlights": {
       "attribute": "Annotations",

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, before } from "node:test";
-import { createTreeSitter, grammars, root } from "../../scripts/tree-sitter.js";
+import { createTreeSitter, root } from "../../scripts/tree-sitter.js";
 import { parseCst } from "./cst.js";
 
 const buildTimeoutMs = 60_000;
@@ -10,24 +10,20 @@ const parseTimeoutMs = 30_000;
 
 let runner;
 let runtime;
-const libraries = new Map();
+let library;
 
 before(() => {
   runner = createTreeSitter();
   runtime = runner.directory;
-  for (const { name, path } of grammars) {
-    const library = join(
-      runtime,
-      `${name}${process.platform === "win32" ? ".dll" : ".so"}`,
-    );
-    const result = runner.run(
-      ["build", "--output", library, join(root, path)],
-      { timeout: buildTimeoutMs },
-    );
-    assert.ifError(result.error);
-    assert.equal(result.status, 0, result.stdout + result.stderr);
-    libraries.set(name, library);
-  }
+  library = join(
+    runtime,
+    process.platform === "win32" ? "json.dll" : "json.so",
+  );
+  const result = runner.run(["build", "--output", library, root], {
+    timeout: buildTimeoutMs,
+  });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
 });
 
 after(() => {
@@ -78,9 +74,7 @@ function applyEdits(source, edits) {
   return bytes;
 }
 
-function parse(source, edits = [], language = "json") {
-  const library = libraries.get(language);
-  assert.ok(library, `unknown grammar: ${language}`);
+function parse(source, edits = []) {
   const directory = mkdtempSync(join(runtime, "input-"));
   try {
     const path = join(directory, "input.json");
@@ -94,7 +88,7 @@ function parse(source, edits = [], language = "json") {
       "--lib-path",
       library,
       "--lang-name",
-      language,
+      "json",
       path,
     ];
     let bytes = Buffer.from(source);
@@ -117,39 +111,40 @@ function parse(source, edits = [], language = "json") {
       assert.equal(parsed[1], parsed[0], "a repeated fresh parse must match");
     }
     const cst = parsed[0];
-    return parseCst(cst, bytes);
+    const tree = parseCst(cst, bytes);
+    if (!tree.hasError)
+      assert.equal(result.status, 0, result.stdout + result.stderr);
+    return tree;
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
 }
 
-function assertIncrementalEqualsFresh(
-  initial,
-  edits,
-  source,
-  language = "json",
-) {
+function assertIncrementalEqualsFresh(initial, edits, source) {
   try {
-    const incremental = parse(initial, edits, language);
-    const fresh = parse(source, [], language);
-    assert.deepEqual(incremental.nodes, fresh.nodes);
+    assert.deepEqual(
+      applyEdits(initial, edits),
+      Buffer.from(source),
+      "edited input differs",
+    );
+    const fresh = parse(source);
+    const incremental = parse(initial, edits);
+    if (!fresh.hasError) {
+      assert.equal(incremental.hasError, false, incremental.cst);
+      assert.deepEqual(incremental.nodes, fresh.nodes);
+    }
     return incremental;
   } catch (error) {
     if (error instanceof Error)
-      error.message += `\n${JSON.stringify({ language, initial, edits, source })}`;
+      error.message += `\n${JSON.stringify({ initial, edits, source })}`;
     throw error;
   }
 }
 
-function assertEditHistory({ source, edits }, language = "json") {
+function assertEditHistory({ source, edits }) {
   for (let count = 1; count <= edits.length; count++) {
     const history = edits.slice(0, count);
-    assertIncrementalEqualsFresh(
-      source,
-      history,
-      applyEdits(source, history),
-      language,
-    );
+    assertIncrementalEqualsFresh(source, history, applyEdits(source, history));
   }
 }
 

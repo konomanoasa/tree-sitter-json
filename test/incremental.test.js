@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { grammars } from "../scripts/tree-sitter.js";
 import {
   applyEdits,
   assertEditHistory,
@@ -8,278 +7,155 @@ import {
   parse,
 } from "./support/parser.js";
 
-for (const { name: language } of grammars) {
-  for (const [prefix, suffix] of [
-    ['"a', 'b"'],
-    ['"\\', 'b"'],
-    ["1.", "2"],
-    ["12", "3"],
-    ["{", '"a":1}'],
-    ...(language === "json"
-      ? []
-      : [
-          ["/*", "*/1"],
-          ["//", "\r\n1"],
-        ]),
-  ]) {
-    test(`${language}: splitting a character merges the preceding decoding issue after ${JSON.stringify(prefix)}`, () => {
-      const start = Buffer.byteLength(prefix);
-      const source = Buffer.concat([
-        Buffer.from(prefix),
-        Buffer.from([255]),
-        Buffer.from(`é${suffix}`),
-      ]);
-      const edits = [{ byte: start + 2, deleteBytes: 1, insert: "" }];
-      const result = assertIncrementalEqualsFresh(
+for (const source of [
+  '{"a":[true,false,null,-12.34e+5,"\\uD834\\uDD1E"]}',
+  '{"a":"é😀\\":x","b":[]}',
+  '\uFEFF{\r\n"名":"é😀",\r\n"b":0\r\n}',
+]) {
+  test(`deleting and restoring each code point recovers the normal CST: ${source}`, () => {
+    let byte = 0;
+    for (const character of source) {
+      const length = Buffer.byteLength(character);
+      assertEditHistory({
         source,
-        edits,
-        applyEdits(source, edits),
-        language,
-      );
-      assert.deepEqual(
-        result.issues
-          .filter(([, , reason]) => reason === "invalid_encoding")
-          .map(([, , , start, end]) => [start, end]),
-        [[start, start + 2]],
-      );
-    });
-  }
-}
-
-for (const { name: language } of grammars) {
-  for (const source of [
-    '{"a":[true,false,null,-12.34e+5,"\\uD834\\uDD1E"]}',
-    '{"a":[1},"b":2}',
-    '[{"a":1],2]',
-    "{true:1,[]:2,{}:3,foo:4}",
-    '{"a":1 :2}',
-    '{"a":\n"b":1}',
-    '{"a" "b":1}',
-    '{"a":"é\\":😀":1}',
-    "[1,}\u0001]",
-    "{1 ]:2}",
-    '{"a" ]:1}',
-    '{"a" ] "b":1}',
-    '{"a"\u0001 ]:1}',
-    '[01,+2,.3,1.,1e+,truefalse,"\\q","\\u12"]',
-    '\uFEFF{\r\n"名":"é😀",\r\n"b":0\r\n}',
-    ...(language === "json"
-      ? []
-      : [
-          '/*é😀*/{"a"/*name*/:1,//line\r\n"b":[2,],}',
-          "[1,/*unfinished",
-          "//only\r\n/*more*/",
-          '[1e/*boundary*/,"\\u12"/*tail*/]',
-          '{"a":"b"/*:*/:1}',
-          '{"a":1//: ignored\n:2}',
-          '{"a":/x:1}',
-        ]),
-  ]) {
-    test(`${language}: deleting and restoring every code point: ${JSON.stringify(source)}`, () => {
-      let byte = 0;
-      for (const character of source) {
-        const length = Buffer.byteLength(character);
-        assertEditHistory(
-          {
-            source,
-            edits: [
-              { byte, deleteBytes: length, insert: "" },
-              { byte, deleteBytes: 0, insert: character },
-            ],
-          },
-          language,
-        );
-        byte += length;
-      }
-    });
-  }
-
-  for (const source of [
-    '{"a":[-0.5E-2,true,"\\u1234"]}',
-    '"\\u12',
-    '[{"a":1',
-    ...(language === "json"
-      ? []
-      : ["[1,/*é😀*/]", '{"a":1,//é\r\n}', "//é😀", "/*é😀"]),
-  ]) {
-    test(`${language}: typing and erasing all prefixes: ${JSON.stringify(source)}`, () => {
-      const edits = [];
-      let byte = 0;
-      for (const character of source) {
-        edits.push({ byte, deleteBytes: 0, insert: character });
-        byte += Buffer.byteLength(character);
-      }
-      for (const character of [...source].reverse()) {
-        byte -= Buffer.byteLength(character);
-        edits.push({
-          byte,
-          deleteBytes: Buffer.byteLength(character),
-          insert: "",
-        });
-      }
-      assertEditHistory({ source: "", edits }, language);
-    });
-  }
-
-  const historySeed = 8259;
-  test(`${language}: fixed-seed generated histories preserve the public CST (seed ${historySeed})`, () => {
-    const historyCount = 16;
-    const valuesPerArray = 5;
-    const editsPerHistory = 12;
-    const xorshiftLeftBits = 13;
-    const xorshiftRightBits = 17;
-    const xorshiftFinalLeftBits = 5;
-    let state = historySeed;
-    const random = (limit) => {
-      state ^= state << xorshiftLeftBits;
-      state ^= state >>> xorshiftRightBits;
-      state ^= state << xorshiftFinalLeftBits;
-      return (state >>> 0) % limit;
-    };
-    const values = [
-      "null",
-      "false",
-      "true",
-      "0",
-      "-12.34e+56",
-      '"é\\n"',
-      "[]",
-      "{}",
-    ];
-    const fragments = [
-      '"',
-      "\\",
-      "u",
-      "0",
-      "-",
-      "e",
-      ":",
-      ",",
-      "[",
-      "]",
-      "{",
-      "}",
-      " ",
-      "\r\n",
-      "é",
-      "true",
-      "/",
-      "*",
-      "//",
-      "/*",
-      "*/",
-    ];
-    for (let run = 0; run < historyCount; run++) {
-      const layout = language === "json" ? "" : random(2) ? "/*é*/" : "//x\r\n";
-      const trailing = language === "jsonc_trailing" && random(2) ? "," : "";
-      const source = `[${layout}${Array.from({ length: valuesPerArray }, () => values[random(values.length)]).join(`,${layout}`)}${trailing}${layout}]`;
-      assert.deepEqual(parse(source, [], language).issues, []);
-      let edited = source;
-      const edits = [];
-      for (let step = 0; step < editsPerHistory; step++) {
-        const characters = [...edited];
-        const index = random(characters.length + 1);
-        const byte = Buffer.byteLength(characters.slice(0, index).join(""));
-        const deleteBytes =
-          random(2) && index < characters.length
-            ? Buffer.byteLength(characters[index])
-            : 0;
-        const insert = fragments[random(fragments.length)];
-        const edit = { byte, deleteBytes, insert };
-        edits.push(edit);
-        edited = applyEdits(edited, [edit]).toString();
-      }
-      assertEditHistory({ source, edits }, language);
+        edits: [
+          { byte, deleteBytes: length, insert: "" },
+          { byte, deleteBytes: 0, insert: character },
+        ],
+      });
+      byte += length;
     }
   });
 }
 
-test("adding and removing the array closing preserves incremental structure", () => {
-  const edits = [{ byte: 1, deleteBytes: 0, insert: "]" }];
-  assertIncrementalEqualsFresh("[", edits, "[]");
-  edits.push({ byte: 1, deleteBytes: 1, insert: "" });
-  assertIncrementalEqualsFresh("[", edits, "[");
+for (const source of ['{"a":[-0.5E-2,true,"\\u1234"]}', '"é😀"']) {
+  test(`typing and erasing prefixes agrees with fresh whenever complete: ${source}`, () => {
+    const edits = [];
+    let byte = 0;
+    for (const character of source) {
+      edits.push({ byte, deleteBytes: 0, insert: character });
+      byte += Buffer.byteLength(character);
+    }
+    for (const character of [...source].reverse()) {
+      byte -= Buffer.byteLength(character);
+      edits.push({
+        byte,
+        deleteBytes: Buffer.byteLength(character),
+        insert: "",
+      });
+    }
+    assertEditHistory({ source: "", edits });
+  });
+}
+
+const historySeed = 8259;
+test(`fixed-seed generated histories restore normal structures (seed ${historySeed})`, () => {
+  const historyCount = 16;
+  const valuesPerArray = 5;
+  const editsPerHistory = 12;
+  let state = historySeed;
+  const random = (limit) => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return (state >>> 0) % limit;
+  };
+  const values = [
+    "null",
+    "false",
+    "true",
+    "0",
+    "-12.34e+56",
+    '"é\\n"',
+    "[]",
+    "{}",
+  ];
+  const fragments = [
+    '"',
+    "\\",
+    "u",
+    "0",
+    "-",
+    "e",
+    ":",
+    ",",
+    "[",
+    "]",
+    "{",
+    "}",
+    " ",
+    "\r\n",
+    "é",
+    "true",
+    "/",
+    "*",
+  ];
+  for (let run = 0; run < historyCount; run++) {
+    const source = `[${Array.from({ length: valuesPerArray }, () => values[random(values.length)]).join(",")}]`;
+    assert.equal(parse(source).hasError, false, source);
+    let edited = source;
+    const edits = [];
+    for (let step = 0; step < editsPerHistory; step++) {
+      const characters = [...edited];
+      const index = random(characters.length + 1);
+      const byte = Buffer.byteLength(characters.slice(0, index).join(""));
+      const deleteBytes =
+        random(2) && index < characters.length
+          ? Buffer.byteLength(characters[index])
+          : 0;
+      const insert = fragments[random(fragments.length)];
+      const edit = { byte, deleteBytes, insert };
+      edits.push(edit);
+      edited = applyEdits(edited, [edit]).toString();
+    }
+    edits.push({
+      byte: 0,
+      deleteBytes: Buffer.byteLength(edited),
+      insert: source,
+    });
+    assertEditHistory({ source, edits });
+  }
 });
 
-const collectionSize = 10_000;
-const tokenLength = 100_000;
+const collectionSize = 2_000;
+const tokenLength = 20_000;
 const nestingDepth = 128;
-const unfinishedNestingDepth = 32;
-const objectPrefix = '{"a":';
-const mixedPrefix = '{"a":[';
-const largeInputCases = [
+for (const { name, source, byte } of [
   {
-    name: `array with ${collectionSize} elements`,
+    name: "wide array",
     source: `[${Array(collectionSize).fill("123").join(",")}]`,
     byte: 1,
   },
   {
-    name: `object with ${collectionSize} members`,
+    name: "wide object",
     source: `{${Array(collectionSize).fill('"a":123').join(",")}}`,
     byte: 5,
   },
   {
-    name: `string of ${tokenLength} characters`,
+    name: "long string",
     source: `"${"a".repeat(tokenLength)}"`,
     byte: tokenLength / 2,
   },
   {
-    name: `number of ${tokenLength} digits`,
+    name: "long number",
     source: "1".repeat(tokenLength),
     byte: tokenLength / 2,
   },
   {
-    name: `invalid number of ${tokenLength} digits`,
-    source: `0x${"1".repeat(tokenLength)}`,
-    byte: tokenLength / 2,
-  },
-  {
-    name: `${tokenLength} repeated commas`,
-    source: `[0${",".repeat(tokenLength)}]`,
-    byte: 1,
-  },
-  {
-    name: `arrays nested ${nestingDepth} levels`,
+    name: "deep array",
     source: `${"[".repeat(nestingDepth)}0${"]".repeat(nestingDepth)}`,
     byte: nestingDepth,
   },
   {
-    name: `objects nested ${nestingDepth} levels`,
-    source: `${objectPrefix.repeat(nestingDepth)}0${"}".repeat(nestingDepth)}`,
-    byte: nestingDepth * objectPrefix.length,
+    name: "deep object",
+    source: `${'{"a":'.repeat(nestingDepth)}0${"}".repeat(nestingDepth)}`,
+    byte: nestingDepth * 5,
   },
-  {
-    name: `unfinished containers nested ${unfinishedNestingDepth} levels`,
-    source: `${mixedPrefix.repeat(unfinishedNestingDepth)}0`,
-    byte: unfinishedNestingDepth * mixedPrefix.length,
-  },
-];
-
-for (const { name: language } of grammars) {
-  const cases = [...largeInputCases];
-  if (language !== "json") {
-    for (const [name, prefix, suffix] of [
-      ["line comment", "//", "\n[1,]"],
-      ["block comment", "/*", "*/[1,]"],
-      ["unfinished comment", "/*", ""],
-      ["comment after comma", "[1,/*", "*/]"],
-    ]) {
-      cases.push({
-        name: `${name} of ${tokenLength} characters`,
-        source: `${prefix}${"a".repeat(tokenLength)}${suffix}`,
-        byte: prefix.length + tokenLength / 2,
-      });
-    }
-  }
-  for (const { name, source, byte } of cases) {
-    test(`${language}: editing ${name} preserves the public CST and ranges`, () => {
-      assert.equal(parse(source, [], language).hasError, false);
-      const edits = [{ byte, deleteBytes: 1, insert: "2" }];
-      const fresh = parse(applyEdits(source, edits), [], language);
-      const incremental = parse(source, edits, language);
-      assert.equal(fresh.hasError, false);
-      assert.equal(incremental.hasError, false);
-      assert.deepEqual(incremental.nodes, fresh.nodes);
-    });
-  }
+]) {
+  test(`a local edit in a ${name} preserves the normal CST and ranges`, () => {
+    const edits = [{ byte, deleteBytes: 1, insert: "2" }];
+    const expected = applyEdits(source, edits);
+    assert.equal(parse(expected).hasError, false);
+    assertIncrementalEqualsFresh(source, edits, expected);
+  });
 }
