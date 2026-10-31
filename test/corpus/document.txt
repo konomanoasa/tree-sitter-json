@@ -103,59 +103,136 @@ Initial BOM and UTF-8 leaves retain original byte positions
 0:15 - 0:16         "}"
 
 ==================
-Reject document syntax: "1 true"
-:error
+Extra root value
+:cst
 ==================
 1 true
 ---
+0:0 - 0:6   json_text
+0:0 - 0:1     value
+0:0 - 0:1       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:2 - 0:6     issue: syntax_issue
+0:2 - 0:6       invalid_syntax
+0:2 - 0:6         unexpected_value
+0:2 - 0:6           value
+0:2 - 0:6             "true"
 
 ==================
-Reject document syntax: "}true"
-:error
+Root stray delimiter preserves the first value
+:cst
 ==================
 }true
 ---
+0:0 - 0:5   json_text
+0:0 - 0:1     issue: syntax_issue
+0:0 - 0:1       invalid_syntax
+0:0 - 0:1         invalid_character `}`
+0:1 - 0:5     value
+0:1 - 0:5       "true"
 
 ==================
-Reject document syntax: " \ufeff[]"
-:error
+Noninitial BOM is not layout
+:cst
 ==================
  ﻿[]
 ---
+0:0 - 0:6   json_text
+0:1 - 0:4     value
+0:1 - 0:4       issue: syntax_issue
+0:1 - 0:4         invalid_syntax
+0:1 - 0:4           invalid_value `﻿`
+0:4 - 0:6     issue: syntax_issue
+0:4 - 0:6       invalid_syntax
+0:4 - 0:6         unexpected_value
+0:4 - 0:6           value
+0:4 - 0:6             array
+0:4 - 0:5               "["
+0:5 - 0:6               "]"
 
 ==================
-Reject document syntax: "[0x12,\"\\u12G\"]"
-:error
+Invalid number and escape regions retain confirmed leaves
+:cst
 ==================
 [0x12,"\u12G"]
 ---
-
+0:0  - 0:14   json_text
+0:0  - 0:14     value
+0:0  - 0:14       array
+0:0  - 0:1          "["
+0:1  - 0:5          value
+0:1  - 0:5            number
+0:1  - 0:5              int
+0:1  - 0:2                "0"
+0:2  - 0:5                issue: syntax_issue
+0:2  - 0:5                  invalid_syntax
+0:2  - 0:5                    invalid_number
+0:3  - 0:4                      digit `1`
+0:4  - 0:5                      digit `2`
+0:5  - 0:6          ","
+0:6  - 0:13         value
+0:6  - 0:13           string
+0:6  - 0:7              "\""
+0:7  - 0:12             char
+0:7  - 0:12               issue: syntax_issue
+0:7  - 0:12                 invalid_syntax
+0:7  - 0:12                   invalid_escape
+0:7  - 0:8                      "\\"
+0:8  - 0:9                      "u"
+0:9  - 0:10                     hexdig `1`
+0:10 - 0:11                     hexdig `2`
+0:12 - 0:13             "\""
+0:13 - 0:14         "]"
 ==================
-Reject document syntax: ""
-:error
+Empty document requires a root value
+:cst
 ==================
 
 ---
+0:0 - 0:0   json_text
+0:0 - 0:0     issue: syntax_issue
+0:0 - 0:0       incomplete_syntax
+0:0 - 0:0         missing_value
 
 ==================
-Reject document syntax: " \n"
-:error
+Whitespace-only document
+:cst
 ==================
  
 
 ---
-
+0:0 - 1:0   json_text
+1:0 - 1:0     issue: syntax_issue
+1:0 - 1:0       incomplete_syntax
+1:0 - 1:0         missing_value
 
 ==================
 BOM alone requires a value
-:error
+:cst
 ==================
 ﻿
 ---
+0:3 - 0:3   json_text
+0:3 - 0:3     issue: syntax_issue
+0:3 - 0:3       incomplete_syntax
+0:3 - 0:3         missing_value
 
 ==================
 Only one initial BOM is excluded
-:error
+:cst
 ==================
 ﻿﻿[]
 ---
+0:3 - 0:8   json_text
+0:3 - 0:6     value
+0:3 - 0:6       issue: syntax_issue
+0:3 - 0:6         invalid_syntax
+0:3 - 0:6           invalid_value `﻿`
+0:6 - 0:8     issue: syntax_issue
+0:6 - 0:8       invalid_syntax
+0:6 - 0:8         unexpected_value
+0:6 - 0:8           value
+0:6 - 0:8             array
+0:6 - 0:7               "["
+0:7 - 0:8               "]"

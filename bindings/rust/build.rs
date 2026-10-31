@@ -19,5 +19,6 @@ fn main() {
   build
     .include("src")
     .file("src/parser.c")
+    .file("src/scanner.c")
     .compile("tree-sitter-json");
 }

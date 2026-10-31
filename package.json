@@ -31,8 +31,9 @@
     "check:queries": "npm run tree-sitter -- check-queries",
     "format": "biome format --write .",
     "generate": "npm run tree-sitter -- generate",
-    "test": "npm run tree-sitter -- test-corpus --rebuild && node --test --test-concurrency=1 test/build.test.js test/cst.test.js test/highlight.test.js test/incremental.test.js test/parser.test.js",
+    "test": "npm run tree-sitter -- test-corpus --rebuild && node --test --test-concurrency=1 test/build.test.js test/cst.test.js test/highlight.test.js test/incremental.test.js test/parser.test.js && node scripts/check-c.js --test",
     "test:fuzz": "npm run tree-sitter -- fuzz --iterations 100 --edits 5",
+    "test:sanitize": "node scripts/check-c.js --sanitize",
     "tree-sitter": "node scripts/tree-sitter.js"
   },
   "devDependencies": {

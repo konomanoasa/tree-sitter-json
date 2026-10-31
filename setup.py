@@ -13,7 +13,11 @@ setup(
     ext_modules=[
         Extension(
             "tree_sitter_json.binding",
-            sources=["bindings/python/binding.c", "src/parser.c"],
+            sources=[
+                "bindings/python/binding.c",
+                "src/parser.c",
+                "src/scanner.c",
+            ],
             include_dirs=["src"],
             depends=["src/tree_sitter/parser.h"],
             extra_compile_args=["/std:c17", "/utf-8"]

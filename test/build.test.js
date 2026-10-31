@@ -28,6 +28,25 @@ const configuration = JSON.parse(
 );
 const language = packageName.slice("tree-sitter-".length).replaceAll("-", "_");
 
+test("external token order matches the scanner enum", () => {
+  const grammar = JSON.parse(
+    readFileSync(join(root, "src/grammar.json"), "utf8"),
+  );
+  const scanner = readFileSync(join(root, "src/scanner.c"), "utf8");
+  const enumeration = scanner.split("enum TokenType {")[1]?.split("};")[0];
+  assert.ok(enumeration, "scanner must declare its token order");
+  const tokens = enumeration
+    .split(",")
+    .map((token) => token.trim())
+    .filter(Boolean);
+  assert.deepEqual(tokens, [
+    ...grammar.externals.map(({ name }) =>
+      name === "_null" ? "NULL_TOKEN" : name.slice(1).toUpperCase(),
+    ),
+    "TOKEN_COUNT",
+  ]);
+});
+
 test(`${language}: generated checks reject stale and missing files without rewriting them`, {
   skip: Boolean(process.env.CI) && process.platform !== "darwin",
 }, () => {

@@ -205,6 +205,61 @@ const finalCaptureCases = [
     ],
   },
   {
+    name: "invalid leading plus signs retain their numeric role",
+    source: "[+1,+,1e+]",
+    captures: [
+      [0, 1, "punctuation.bracket"],
+      [1, 3, "number"],
+      [3, 4, "punctuation.delimiter"],
+      [4, 5, "number"],
+      [5, 6, "punctuation.delimiter"],
+      [6, 9, "number"],
+      [9, 10, "punctuation.bracket"],
+    ],
+  },
+  {
+    name: "invalid numeric names, unexpected values and commas keep leaf captures",
+    source: "{1:0x12,} true",
+    captures: [
+      [0, 1, "punctuation.bracket"],
+      [1, 2, "number"],
+      [2, 3, "punctuation.delimiter"],
+      [3, 4, "number"],
+      [5, 7, "number"],
+      [7, 8, "punctuation.delimiter"],
+      [8, 9, "punctuation.bracket"],
+      [10, 14, "boolean"],
+    ],
+  },
+  {
+    name: "invalid and incomplete escapes capture only confirmed prefix leaves",
+    source: '["\\q","\\u12G","\\u1',
+    captures: [
+      [0, 1, "punctuation.bracket"],
+      [1, 2, "punctuation.delimiter"],
+      [2, 3, "string.escape"],
+      [4, 7, "punctuation.delimiter"],
+      [7, 11, "string.escape"],
+      [12, 15, "punctuation.delimiter"],
+      [15, 18, "string.escape"],
+    ],
+  },
+  {
+    name: "zero-width issues add no captures and layout remains uncolored",
+    source: '{"a" : [ 1e+ , ]',
+    captures: [
+      [0, 1, "punctuation.bracket"],
+      [1, 2, "punctuation.delimiter"],
+      [2, 3, "property"],
+      [3, 4, "punctuation.delimiter"],
+      [5, 6, "punctuation.delimiter"],
+      [7, 8, "punctuation.bracket"],
+      [9, 12, "number"],
+      [13, 14, "punctuation.delimiter"],
+      [15, 16, "punctuation.bracket"],
+    ],
+  },
+  {
     name: "all simple escapes include the backslash and escaped quote",
     source: '"\\"\\\\\\/\\b\\f\\n\\r\\t"',
     captures: [
@@ -233,11 +288,7 @@ for (const { name, source, captures } of finalCaptureCases) {
   );
 }
 
-test("comment markers inside strings keep their string classification", () => {
-  const source = '"/*x*/"';
-  assertCaptures(source, highlight("source.json", source), [
-    [0, 1, "punctuation.delimiter"],
-    [1, 6, "string"],
-    [6, 7, "punctuation.delimiter"],
-  ]);
+test("raw invalid text has no extension-language captures", () => {
+  const source = "/*comment*/ 'text' NaN";
+  assertCaptures(source, highlight("source.json", source), []);
 });

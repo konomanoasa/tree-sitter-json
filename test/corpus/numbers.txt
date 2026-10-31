@@ -136,106 +136,254 @@ Exponent markers are named leaves
 0:8 - 0:9         "]"
 
 ==================
-Reject numbers syntax: "[01, 0x12, 1.2.3, 1e2e3, +4]"
-:error
+Invalid number regions retain confirmed digits
 ==================
 [01, 0x12, 1.2.3, 1e2e3, +4]
 ---
+(json_text
+  (value
+    (array
+      (value (number (int issue: (syntax_issue (invalid_syntax (invalid_number (digit)))))))
+      (value (number (int issue: (syntax_issue (invalid_syntax (invalid_number (digit) (digit)))))))
+      (value (number (int (digit1_9)) (frac (digit) issue: (syntax_issue (invalid_syntax (invalid_number))) (digit))))
+      (value (number (int (digit1_9)) (exp (e) (digit) issue: (syntax_issue (invalid_syntax (invalid_number))) (digit))))
+      (value (number issue: (syntax_issue (invalid_syntax (invalid_number))) (int (digit1_9)))))))
 
 ==================
-Reject numbers syntax: "01"
-:error
+Leading zero
+:cst
 ==================
 01
 ---
+0:0 - 0:2   json_text
+0:0 - 0:2     value
+0:0 - 0:2       number
+0:0 - 0:2         int
+0:0 - 0:1           "0"
+0:1 - 0:2           issue: syntax_issue
+0:1 - 0:2             invalid_syntax
+0:1 - 0:2               invalid_number
+0:1 - 0:2                 digit `1`
 
 ==================
-Reject numbers syntax: "1e "
-:error
+Exponent ended by layout
+:cst
 ==================
 1e 
 ---
+0:0 - 0:3   json_text
+0:0 - 0:2     value
+0:0 - 0:2       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:2         exp
+0:1 - 0:2           e `e`
+0:2 - 0:2           issue: syntax_issue
+0:2 - 0:2             invalid_syntax
+0:2 - 0:2               missing_digits
 
 ==================
-Reject numbers syntax: ".5"
-:error
+Integer digits before fraction
+:cst
 ==================
 .5
 ---
+0:0 - 0:2   json_text
+0:0 - 0:2     value
+0:0 - 0:2       number
+0:0 - 0:0         issue: syntax_issue
+0:0 - 0:0           invalid_syntax
+0:0 - 0:0             missing_digits
+0:0 - 0:2         frac
+0:0 - 0:1           "."
+0:1 - 0:2           digit `5`
 
 ==================
-Reject numbers syntax: "1.e2"
-:error
+Fraction digits before exponent
+:cst
 ==================
 1.e2
 ---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:2         frac
+0:1 - 0:2           "."
+0:2 - 0:2           issue: syntax_issue
+0:2 - 0:2             invalid_syntax
+0:2 - 0:2               missing_digits
+0:2 - 0:4         exp
+0:2 - 0:3           e `e`
+0:3 - 0:4           digit `2`
 
 ==================
-Reject numbers syntax: "0x10"
-:error
+Hexadecimal notation stays in one number
+:cst
 ==================
 0x10
 ---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       number
+0:0 - 0:4         int
+0:0 - 0:1           "0"
+0:1 - 0:4           issue: syntax_issue
+0:1 - 0:4             invalid_syntax
+0:1 - 0:4               invalid_number
+0:2 - 0:3                 digit `1`
+0:3 - 0:4                 digit `0`
 
 ==================
-Reject numbers syntax: "1.2.3"
-:error
+Second decimal point
+:cst
 ==================
 1.2.3
 ---
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:5         frac
+0:1 - 0:2           "."
+0:2 - 0:3           digit `2`
+0:3 - 0:4           issue: syntax_issue
+0:3 - 0:4             invalid_syntax
+0:3 - 0:4               invalid_number `.`
+0:4 - 0:5           digit `3`
 
 ==================
-Reject numbers syntax: "1e2e3"
-:error
+Second exponent
+:cst
 ==================
 1e2e3
 ---
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:5         exp
+0:1 - 0:2           e `e`
+0:2 - 0:3           digit `2`
+0:3 - 0:4           issue: syntax_issue
+0:3 - 0:4             invalid_syntax
+0:3 - 0:4               invalid_number `e`
+0:4 - 0:5           digit `3`
 
 ==================
-Reject numbers syntax: "-NaN"
-:error
+Invalid integer text is not also missing digits
+:cst
 ==================
 -NaN
 ---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       number
+0:0 - 0:1         "-"
+0:1 - 0:4         issue: syntax_issue
+0:1 - 0:4           invalid_syntax
+0:1 - 0:4             invalid_number `NaN`
 
 ==================
-Reject numbers syntax: "+1"
-:error
+Leading plus
+:cst
 ==================
 +1
 ---
+0:0 - 0:2   json_text
+0:0 - 0:2     value
+0:0 - 0:2       number
+0:0 - 0:1         issue: syntax_issue
+0:0 - 0:1           invalid_syntax
+0:0 - 0:1             invalid_number
+0:0 - 0:1               "+"
+0:1 - 0:2         int
+0:1 - 0:2           digit1_9 `1`
 
 ==================
-Reject numbers syntax: "1__2__3"
-:error
+Normal digits split contiguous invalid numeric runs
+:cst
 ==================
 1__2__3
 ---
+0:0 - 0:7   json_text
+0:0 - 0:7     value
+0:0 - 0:7       number
+0:0 - 0:7         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:3           issue: syntax_issue
+0:1 - 0:3             invalid_syntax
+0:1 - 0:3               invalid_number `__`
+0:3 - 0:4           digit `2`
+0:4 - 0:6           issue: syntax_issue
+0:4 - 0:6             invalid_syntax
+0:4 - 0:6               invalid_number `__`
+0:6 - 0:7           digit `3`
 
 ==================
-Reject numbers syntax: "--12"
-:error
+Normal integer follows an invalid prefix
+:cst
 ==================
 --12
 ---
-
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       number
+0:0 - 0:1         "-"
+0:1 - 0:2         issue: syntax_issue
+0:1 - 0:2           invalid_syntax
+0:1 - 0:2             invalid_number `-`
+0:2 - 0:4         int
+0:2 - 0:3           digit1_9 `1`
+0:3 - 0:4           digit `2`
 ==================
-Reject numbers syntax: "1e+"
-:error
+Exponent at EOF
+:cst
 ==================
 1e+
 ---
+0:0 - 0:3   json_text
+0:0 - 0:3     value
+0:0 - 0:3       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:3         exp
+0:1 - 0:2           e `e`
+0:2 - 0:3           "+"
+0:3 - 0:3           issue: syntax_issue
+0:3 - 0:3             incomplete_syntax
+0:3 - 0:3               missing_digits
 
 ==================
-Reject numbers syntax: "-"
-:error
+Integer digits at EOF
+:cst
 ==================
 -
 ---
+0:0 - 0:1   json_text
+0:0 - 0:1     value
+0:0 - 0:1       number
+0:0 - 0:1         "-"
+0:1 - 0:1         issue: syntax_issue
+0:1 - 0:1           incomplete_syntax
+0:1 - 0:1             missing_digits
 
 ==================
-Reject numbers syntax: "1."
-:error
+Fraction digits at EOF
+:cst
 ==================
 1.
 ---
+0:0 - 0:2   json_text
+0:0 - 0:2     value
+0:0 - 0:2       number
+0:0 - 0:1         int
+0:0 - 0:1           digit1_9 `1`
+0:1 - 0:2         frac
+0:1 - 0:2           "."
+0:2 - 0:2           issue: syntax_issue
+0:2 - 0:2             incomplete_syntax
+0:2 - 0:2               missing_digits

@@ -21,3 +21,10 @@ CompileFlags:
   CompilationDatabase: None
   Add:
     - -I../../src
+
+---
+If:
+  PathMatch: test/scanner\.test\.c
+CompileFlags:
+  Add:
+    - -I../src

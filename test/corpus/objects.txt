@@ -110,7 +110,7 @@ Empty strings and duplicate names
 0:17 - 0:18         "}"
 
 ==================
-Normal member values and quoted colons: {"a":"b:c"}
+Member recovery preserves normal values: {"a":"b:c"}
 :cst
 ==================
 {"a":"b:c"}
@@ -139,7 +139,7 @@ Normal member values and quoted colons: {"a":"b:c"}
 0:10 - 0:11         "}"
 
 ==================
-Normal member values and quoted colons: {"a":"b\":c"}
+Member recovery preserves normal values: {"a":"b\":c"}
 :cst
 ==================
 {"a":"b\":c"}
@@ -171,7 +171,7 @@ Normal member values and quoted colons: {"a":"b\":c"}
 0:12 - 0:13         "}"
 
 ==================
-Normal member values and quoted colons: {"a":{"b":1}}
+Member recovery preserves normal values: {"a":{"b":1}}
 :cst
 ==================
 {"a":{"b":1}}
@@ -205,7 +205,7 @@ Normal member values and quoted colons: {"a":{"b":1}}
 0:12 - 0:13         "}"
 
 ==================
-Normal member values and quoted colons: {"a":[{"b":1}]}
+Member recovery preserves normal values: {"a":[{"b":1}]}
 :cst
 ==================
 {"a":[{"b":1}]}
@@ -243,7 +243,7 @@ Normal member values and quoted colons: {"a":[{"b":1}]}
 0:14 - 0:15         "}"
 
 ==================
-Normal member values and quoted colons: {"a":"b","c":1}
+Member recovery preserves normal values: {"a":"b","c":1}
 :cst
 ==================
 {"a":"b","c":1}
@@ -280,367 +280,1559 @@ Normal member values and quoted colons: {"a":"b","c":1}
 0:14 - 0:15         "}"
 
 ==================
-Reject objects syntax: "{\"a\": [1 true] \"b\" 2}"
-:error
+Missing separators retain later values and members
 ==================
 {"a": [1 true] "b" 2}
 ---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        value: (value
+          (array
+            (value (number (int (digit1_9))))
+            issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+            (value))))
+      issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+      (member
+        name: (string (char (unescaped)))
+        issue: (syntax_issue (invalid_syntax (missing_name_separator)))
+        value: (value (number (int (digit1_9))))))))
 
 ==================
-Reject objects syntax: "[{\"a\":\n\"b\":1},{\"a\" \"b\":1},{\"a\": 1:2}]"
-:error
+Missing member values preserve the following names and colons
 ==================
 [{"a":
 "b":1},{"a" "b":1},{"a": 1:2}]
 ---
+(json_text
+  (value
+    (array
+      (value
+        (object
+          (member name: (string (char (unescaped)))
+            issue: (syntax_issue (invalid_syntax (missing_value))))
+          issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+          (member name: (string (char (unescaped)))
+            value: (value (number (int (digit1_9)))))))
+      (value
+        (object
+          (member name: (string (char (unescaped)))
+            issue: (syntax_issue (invalid_syntax (missing_name_separator)))
+            issue: (syntax_issue (invalid_syntax (missing_value))))
+          issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+          (member name: (string (char (unescaped)))
+            value: (value (number (int (digit1_9)))))))
+      (value
+        (object
+          (member name: (string (char (unescaped)))
+            issue: (syntax_issue (invalid_syntax (missing_value))))
+          issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+          (member
+            issue: (syntax_issue (invalid_syntax (invalid_member_name
+              (value (number (int (digit1_9)))))))
+            value: (value (number (int (digit1_9))))))))))
 
 ==================
-Reject objects syntax: "{true: 1, []: null, raw: false, tru: true}"
-:error
+Invalid names keep structured values
 ==================
 {true: 1, []: null, raw: false, tru: true}
 ---
+(json_text
+  (value
+    (object
+      (member
+        issue: (syntax_issue (invalid_syntax (invalid_member_name (value))))
+        value: (value (number (int (digit1_9)))))
+      (member
+        issue: (syntax_issue (invalid_syntax (invalid_member_name (value (array)))))
+        value: (value))
+      (member
+        issue: (syntax_issue (invalid_syntax (invalid_member_name)))
+        value: (value))
+      (member
+        issue: (syntax_issue (invalid_syntax (invalid_member_name)))
+        value: (value)))))
 
 ==================
-Reject objects syntax: "{1} []"
-:error
+Unexpected values retain their normal structures
 ==================
 {1} []
 ---
+(json_text
+  (value
+    (object
+      issue: (syntax_issue
+        (invalid_syntax
+          (unexpected_value (value (number (int (digit1_9)))))))))
+  issue: (syntax_issue (invalid_syntax (unexpected_value (value (array))))))
 
 ==================
-Reject objects syntax: "{\"a\":[1] :2}"
-:error
+Colon after a container value starts another member with missing comma and name
 ==================
 {"a":[1] :2}
 ---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        value: (value (array (value (number (int (digit1_9)))))))
+      issue: (syntax_issue (invalid_syntax (missing_value_separator)))
+      (member
+        issue: (syntax_issue (invalid_syntax (missing_member_name)))
+        value: (value (number (int (digit1_9))))))))
 
 ==================
-Reject objects syntax: "{\"a\":}"
-:error
+Member value before closing
+:cst
 ==================
 {"a":}
 ---
+0:0 - 0:6   json_text
+0:0 - 0:6     value
+0:0 - 0:6       object
+0:0 - 0:1         "{"
+0:1 - 0:5         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:5           issue: syntax_issue
+0:5 - 0:5             invalid_syntax
+0:5 - 0:5               missing_value
+0:5 - 0:6         "}"
 
 ==================
-Reject objects syntax: "{\"a\" 1}"
-:error
+Missing colon
+:cst
 ==================
 {"a" 1}
 ---
+0:0 - 0:7   json_text
+0:0 - 0:7     value
+0:0 - 0:7       object
+0:0 - 0:1         "{"
+0:1 - 0:6         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:5 - 0:5           issue: syntax_issue
+0:5 - 0:5             invalid_syntax
+0:5 - 0:5               missing_name_separator
+0:5 - 0:6           value: value
+0:5 - 0:6             number
+0:5 - 0:6               int
+0:5 - 0:6                 digit1_9 `1`
+0:6 - 0:7         "}"
 
 ==================
-Reject objects syntax: "{:1}"
-:error
+Missing name
+:cst
 ==================
 {:1}
 ---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       object
+0:0 - 0:1         "{"
+0:1 - 0:3         member
+0:1 - 0:1           issue: syntax_issue
+0:1 - 0:1             invalid_syntax
+0:1 - 0:1               missing_member_name
+0:1 - 0:2           ":"
+0:2 - 0:3           value: value
+0:2 - 0:3             number
+0:2 - 0:3               int
+0:2 - 0:3                 digit1_9 `1`
+0:3 - 0:4         "}"
 
 ==================
-Reject objects syntax: "{\"a\":1 \"b\":2}"
-:error
+Missing object comma
+:cst
 ==================
 {"a":1 "b":2}
 ---
+0:0  - 0:13   json_text
+0:0  - 0:13     value
+0:0  - 0:13       object
+0:0  - 0:1          "{"
+0:1  - 0:6          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:5  - 0:6            value: value
+0:5  - 0:6              number
+0:5  - 0:6                int
+0:5  - 0:6                  digit1_9 `1`
+0:7  - 0:7          issue: syntax_issue
+0:7  - 0:7            invalid_syntax
+0:7  - 0:7              missing_value_separator
+0:7  - 0:12         member
+0:7  - 0:10           name: string
+0:7  - 0:8              "\""
+0:8  - 0:9              char
+0:8  - 0:9                unescaped `b`
+0:9  - 0:10             "\""
+0:10 - 0:11           ":"
+0:11 - 0:12           value: value
+0:11 - 0:12             number
+0:11 - 0:12               int
+0:11 - 0:12                 digit1_9 `2`
+0:12 - 0:13         "}"
 
 ==================
-Reject objects syntax: "{\"a\":[1}"
-:error
+Ancestor object closing
+:cst
 ==================
 {"a":[1}
 ---
+0:0 - 0:8   json_text
+0:0 - 0:8     value
+0:0 - 0:8       object
+0:0 - 0:1         "{"
+0:1 - 0:7         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:7           value: value
+0:5 - 0:7             array
+0:5 - 0:6               "["
+0:6 - 0:7               value
+0:6 - 0:7                 number
+0:6 - 0:7                   int
+0:6 - 0:7                     digit1_9 `1`
+0:7 - 0:7               issue: syntax_issue
+0:7 - 0:7                 invalid_syntax
+0:7 - 0:7                   missing_array_close
+0:7 - 0:8         "}"
 
 ==================
-Reject objects syntax: "{\"a\":1]}"
-:error
+Stray array closing inside object
+:cst
 ==================
 {"a":1]}
 ---
+0:0 - 0:8   json_text
+0:0 - 0:8     value
+0:0 - 0:8       object
+0:0 - 0:1         "{"
+0:1 - 0:6         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:6           value: value
+0:5 - 0:6             number
+0:5 - 0:6               int
+0:5 - 0:6                 digit1_9 `1`
+0:6 - 0:7         issue: syntax_issue
+0:6 - 0:7           invalid_syntax
+0:6 - 0:7             invalid_character `]`
+0:7 - 0:8         "}"
 
 ==================
-Reject objects syntax: "{foo:1}"
-:error
+Unquoted member name
+:cst
 ==================
 {foo:1}
 ---
+0:0 - 0:7   json_text
+0:0 - 0:7     value
+0:0 - 0:7       object
+0:0 - 0:1         "{"
+0:1 - 0:6         member
+0:1 - 0:4           issue: syntax_issue
+0:1 - 0:4             invalid_syntax
+0:1 - 0:4               invalid_member_name `foo`
+0:4 - 0:5           ":"
+0:5 - 0:6           value: value
+0:5 - 0:6             number
+0:5 - 0:6               int
+0:5 - 0:6                 digit1_9 `1`
+0:6 - 0:7         "}"
 
 ==================
-Reject objects syntax: "{foo\u0000:1}"
-:error
+NUL stays inside an unquoted member name
+:cst
 ==================
 {foo :1}
 ---
+0:0 - 0:8   json_text
+0:0 - 0:8     value
+0:0 - 0:8       object
+0:0 - 0:1         "{"
+0:1 - 0:7         member
+0:1 - 0:5           issue: syntax_issue
+0:1 - 0:5             invalid_syntax
+0:1 - 0:5               invalid_member_name `foo\0`
+0:5 - 0:6           ":"
+0:6 - 0:7           value: value
+0:6 - 0:7             number
+0:6 - 0:7               int
+0:6 - 0:7                 digit1_9 `1`
+0:7 - 0:8         "}"
 
 ==================
-Reject objects syntax: "{foo \u0001:2}"
-:error
+Control between an unquoted member name and its colon
+:cst
 ==================
 {foo :2}
 ---
+0:0 - 0:9   json_text
+0:0 - 0:9     value
+0:0 - 0:9       object
+0:0 - 0:1         "{"
+0:1 - 0:8         member
+0:1 - 0:4           issue: syntax_issue
+0:1 - 0:4             invalid_syntax
+0:1 - 0:4               invalid_member_name `foo`
+0:5 - 0:6           issue: syntax_issue
+0:5 - 0:6             invalid_syntax
+0:5 - 0:6               invalid_character ``
+0:6 - 0:7           ":"
+0:7 - 0:8           value: value
+0:7 - 0:8             number
+0:7 - 0:8               int
+0:7 - 0:8                 digit1_9 `2`
+0:8 - 0:9         "}"
 
 ==================
-Reject objects syntax: "{1:2}"
-:error
+Numeric member name
+:cst
 ==================
 {1:2}
 ---
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       object
+0:0 - 0:1         "{"
+0:1 - 0:4         member
+0:1 - 0:2           issue: syntax_issue
+0:1 - 0:2             invalid_syntax
+0:1 - 0:2               invalid_member_name
+0:1 - 0:2                 value
+0:1 - 0:2                   number
+0:1 - 0:2                     int
+0:1 - 0:2                       digit1_9 `1`
+0:2 - 0:3           ":"
+0:3 - 0:4           value: value
+0:3 - 0:4             number
+0:3 - 0:4               int
+0:3 - 0:4                 digit1_9 `2`
+0:4 - 0:5         "}"
 
 ==================
-Reject objects syntax: "{true:1}"
-:error
+Boolean member names keep their value structure
+:cst
 ==================
 {true:1}
 ---
+0:0 - 0:8   json_text
+0:0 - 0:8     value
+0:0 - 0:8       object
+0:0 - 0:1         "{"
+0:1 - 0:7         member
+0:1 - 0:5           issue: syntax_issue
+0:1 - 0:5             invalid_syntax
+0:1 - 0:5               invalid_member_name
+0:1 - 0:5                 value
+0:1 - 0:5                   "true"
+0:5 - 0:6           ":"
+0:6 - 0:7           value: value
+0:6 - 0:7             number
+0:6 - 0:7               int
+0:6 - 0:7                 digit1_9 `1`
+0:7 - 0:8         "}"
 
 ==================
-Reject objects syntax: "{null:1}"
-:error
+Null member names keep their value structure
+:cst
 ==================
 {null:1}
 ---
+0:0 - 0:8   json_text
+0:0 - 0:8     value
+0:0 - 0:8       object
+0:0 - 0:1         "{"
+0:1 - 0:7         member
+0:1 - 0:5           issue: syntax_issue
+0:1 - 0:5             invalid_syntax
+0:1 - 0:5               invalid_member_name
+0:1 - 0:5                 value
+0:1 - 0:5                   "null"
+0:5 - 0:6           ":"
+0:6 - 0:7           value: value
+0:6 - 0:7             number
+0:6 - 0:7               int
+0:6 - 0:7                 digit1_9 `1`
+0:7 - 0:8         "}"
 
 ==================
-Reject objects syntax: "{[]:1}"
-:error
+Array member names keep their value structure
+:cst
 ==================
 {[]:1}
 ---
+0:0 - 0:6   json_text
+0:0 - 0:6     value
+0:0 - 0:6       object
+0:0 - 0:1         "{"
+0:1 - 0:5         member
+0:1 - 0:3           issue: syntax_issue
+0:1 - 0:3             invalid_syntax
+0:1 - 0:3               invalid_member_name
+0:1 - 0:3                 value
+0:1 - 0:3                   array
+0:1 - 0:2                     "["
+0:2 - 0:3                     "]"
+0:3 - 0:4           ":"
+0:4 - 0:5           value: value
+0:4 - 0:5             number
+0:4 - 0:5               int
+0:4 - 0:5                 digit1_9 `1`
+0:5 - 0:6         "}"
 
 ==================
-Reject objects syntax: "{{}:1}"
-:error
+Object member names keep their value structure
+:cst
 ==================
 {{}:1}
 ---
+0:0 - 0:6   json_text
+0:0 - 0:6     value
+0:0 - 0:6       object
+0:0 - 0:1         "{"
+0:1 - 0:5         member
+0:1 - 0:3           issue: syntax_issue
+0:1 - 0:3             invalid_syntax
+0:1 - 0:3               invalid_member_name
+0:1 - 0:3                 value
+0:1 - 0:3                   object
+0:1 - 0:2                     "{"
+0:2 - 0:3                     "}"
+0:3 - 0:4           ":"
+0:4 - 0:5           value: value
+0:4 - 0:5             number
+0:4 - 0:5               int
+0:4 - 0:5                 digit1_9 `1`
+0:5 - 0:6         "}"
 
 ==================
-Reject objects syntax: "{1}"
-:error
+Object value without a member
+:cst
 ==================
 {1}
 ---
+0:0 - 0:3   json_text
+0:0 - 0:3     value
+0:0 - 0:3       object
+0:0 - 0:1         "{"
+0:1 - 0:2         issue: syntax_issue
+0:1 - 0:2           invalid_syntax
+0:1 - 0:2             unexpected_value
+0:1 - 0:2               value
+0:1 - 0:2                 number
+0:1 - 0:2                   int
+0:1 - 0:2                     digit1_9 `1`
+0:2 - 0:3         "}"
 
 ==================
-Reject objects syntax: "{\"a\"}"
-:error
+Independent missing member components before closing
+:cst
 ==================
 {"a"}
 ---
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       object
+0:0 - 0:1         "{"
+0:1 - 0:4         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:4           issue: syntax_issue
+0:4 - 0:4             invalid_syntax
+0:4 - 0:4               missing_name_separator
+0:4 - 0:4           issue: syntax_issue
+0:4 - 0:4             invalid_syntax
+0:4 - 0:4               missing_value
+0:4 - 0:5         "}"
 
 ==================
-Reject objects syntax: "{\"a\":\u0000true}"
-:error
+Member control before a value
+:cst
 ==================
 {"a": true}
 ---
+0:0  - 0:11   json_text
+0:0  - 0:11     value
+0:0  - 0:11       object
+0:0  - 0:1          "{"
+0:1  - 0:10         member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:5  - 0:6            issue: syntax_issue
+0:5  - 0:6              invalid_syntax
+0:5  - 0:6                invalid_character `\0`
+0:6  - 0:10           value: value
+0:6  - 0:10             "true"
+0:10 - 0:11         "}"
 
 ==================
-Reject objects syntax: "{1 }:"
-:error
+Closing after a nonstring value closes the object before a colon
+:cst
 ==================
 {1 }:
 ---
+0:0 - 0:5   json_text
+0:0 - 0:4     value
+0:0 - 0:4       object
+0:0 - 0:1         "{"
+0:1 - 0:2         issue: syntax_issue
+0:1 - 0:2           invalid_syntax
+0:1 - 0:2             unexpected_value
+0:1 - 0:2               value
+0:1 - 0:2                 number
+0:1 - 0:2                   int
+0:1 - 0:2                     digit1_9 `1`
+0:3 - 0:4         "}"
+0:4 - 0:5     issue: syntax_issue
+0:4 - 0:5       invalid_syntax
+0:4 - 0:5         invalid_character `:`
 
 ==================
-Reject objects syntax: "{1 , :2}"
-:error
+Comma after a nonstring value separates it from a colon
+:cst
 ==================
 {1 , :2}
 ---
+0:0 - 0:8   json_text
+0:0 - 0:8     value
+0:0 - 0:8       object
+0:0 - 0:1         "{"
+0:1 - 0:2         issue: syntax_issue
+0:1 - 0:2           invalid_syntax
+0:1 - 0:2             unexpected_value
+0:1 - 0:2               value
+0:1 - 0:2                 number
+0:1 - 0:2                   int
+0:1 - 0:2                     digit1_9 `1`
+0:3 - 0:4         ","
+0:5 - 0:7         member
+0:5 - 0:5           issue: syntax_issue
+0:5 - 0:5             invalid_syntax
+0:5 - 0:5               missing_member_name
+0:5 - 0:6           ":"
+0:6 - 0:7           value: value
+0:6 - 0:7             number
+0:6 - 0:7               int
+0:6 - 0:7                 digit1_9 `2`
+0:7 - 0:8         "}"
 
 ==================
-Reject objects syntax: "{1 ]:2}"
-:error
+Stray closing between a nonstring value and a colon stays in the object
+:cst
 ==================
 {1 ]:2}
 ---
+0:0 - 0:7   json_text
+0:0 - 0:7     value
+0:0 - 0:7       object
+0:0 - 0:1         "{"
+0:1 - 0:2         issue: syntax_issue
+0:1 - 0:2           invalid_syntax
+0:1 - 0:2             unexpected_value
+0:1 - 0:2               value
+0:1 - 0:2                 number
+0:1 - 0:2                   int
+0:1 - 0:2                     digit1_9 `1`
+0:3 - 0:4         issue: syntax_issue
+0:3 - 0:4           invalid_syntax
+0:3 - 0:4             invalid_character `]`
+0:4 - 0:4         issue: syntax_issue
+0:4 - 0:4           invalid_syntax
+0:4 - 0:4             missing_value_separator
+0:4 - 0:6         member
+0:4 - 0:4           issue: syntax_issue
+0:4 - 0:4             invalid_syntax
+0:4 - 0:4               missing_member_name
+0:4 - 0:5           ":"
+0:5 - 0:6           value: value
+0:5 - 0:6             number
+0:5 - 0:6               int
+0:5 - 0:6                 digit1_9 `2`
+0:6 - 0:7         "}"
 
 ==================
-Reject objects syntax: "{\"a\":\u0001\u00021}"
-:error
+Adjacent forbidden member layout characters form one issue
+:cst
 ==================
 {"a":1}
 ---
+0:0 - 0:9   json_text
+0:0 - 0:9     value
+0:0 - 0:9       object
+0:0 - 0:1         "{"
+0:1 - 0:8         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:7           issue: syntax_issue
+0:5 - 0:7             invalid_syntax
+0:5 - 0:7               invalid_character ``
+0:7 - 0:8           value: value
+0:7 - 0:8             number
+0:7 - 0:8               int
+0:7 - 0:8                 digit1_9 `1`
+0:8 - 0:9         "}"
 
 ==================
-Reject objects syntax: "{\"a\":1,] \"b\":2}"
-:error
+Object members survive a stray closing after a comma
+:cst
 ==================
 {"a":1,] "b":2}
 ---
+0:0  - 0:15   json_text
+0:0  - 0:15     value
+0:0  - 0:15       object
+0:0  - 0:1          "{"
+0:1  - 0:6          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:5  - 0:6            value: value
+0:5  - 0:6              number
+0:5  - 0:6                int
+0:5  - 0:6                  digit1_9 `1`
+0:6  - 0:7          ","
+0:7  - 0:8          issue: syntax_issue
+0:7  - 0:8            invalid_syntax
+0:7  - 0:8              invalid_character `]`
+0:9  - 0:14         member
+0:9  - 0:12           name: string
+0:9  - 0:10             "\""
+0:10 - 0:11             char
+0:10 - 0:11               unescaped `b`
+0:11 - 0:12             "\""
+0:12 - 0:13           ":"
+0:13 - 0:14           value: value
+0:13 - 0:14             number
+0:13 - 0:14               int
+0:13 - 0:14                 digit1_9 `2`
+0:14 - 0:15         "}"
 
 ==================
-Reject objects syntax: "{[]\u0000 \"a\":1}"
-:error
+Control after an object value does not turn it into a member name
+:cst
 ==================
 {[]  "a":1}
 ---
+0:0  - 0:11   json_text
+0:0  - 0:11     value
+0:0  - 0:11       object
+0:0  - 0:1          "{"
+0:1  - 0:3          issue: syntax_issue
+0:1  - 0:3            invalid_syntax
+0:1  - 0:3              unexpected_value
+0:1  - 0:3                value
+0:1  - 0:3                  array
+0:1  - 0:2                    "["
+0:2  - 0:3                    "]"
+0:3  - 0:4          issue: syntax_issue
+0:3  - 0:4            invalid_syntax
+0:3  - 0:4              invalid_character `\0`
+0:5  - 0:5          issue: syntax_issue
+0:5  - 0:5            invalid_syntax
+0:5  - 0:5              missing_value_separator
+0:5  - 0:10         member
+0:5  - 0:8            name: string
+0:5  - 0:6              "\""
+0:6  - 0:7              char
+0:6  - 0:7                unescaped `a`
+0:7  - 0:8              "\""
+0:8  - 0:9            ":"
+0:9  - 0:10           value: value
+0:9  - 0:10             number
+0:9  - 0:10               int
+0:9  - 0:10                 digit1_9 `1`
+0:10 - 0:11         "}"
 
 ==================
-Reject objects syntax: "{[]\u0000:1}"
-:error
+Colon confirms a nonstring member name across a control
+:cst
 ==================
 {[] :1}
 ---
+0:0 - 0:7   json_text
+0:0 - 0:7     value
+0:0 - 0:7       object
+0:0 - 0:1         "{"
+0:1 - 0:6         member
+0:1 - 0:3           issue: syntax_issue
+0:1 - 0:3             invalid_syntax
+0:1 - 0:3               invalid_member_name
+0:1 - 0:3                 value
+0:1 - 0:3                   array
+0:1 - 0:2                     "["
+0:2 - 0:3                     "]"
+0:3 - 0:4           issue: syntax_issue
+0:3 - 0:4             invalid_syntax
+0:3 - 0:4               invalid_character `\0`
+0:4 - 0:5           ":"
+0:5 - 0:6           value: value
+0:5 - 0:6             number
+0:5 - 0:6               int
+0:5 - 0:6                 digit1_9 `1`
+0:6 - 0:7         "}"
 
 ==================
-Reject objects syntax: "{\"a\":\n\"b\":1}"
-:error
+Member recovery preserves a quoted name after a newline
+:cst
 ==================
 {"a":
 "b":1}
 ---
+0:0 - 1:6   json_text
+0:0 - 1:6     value
+0:0 - 1:6       object
+0:0 - 0:1         "{"
+0:1 - 1:0         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+1:0 - 1:0           issue: syntax_issue
+1:0 - 1:0             invalid_syntax
+1:0 - 1:0               missing_value
+1:0 - 1:0         issue: syntax_issue
+1:0 - 1:0           invalid_syntax
+1:0 - 1:0             missing_value_separator
+1:0 - 1:5         member
+1:0 - 1:3           name: string
+1:0 - 1:1             "\""
+1:1 - 1:2             char
+1:1 - 1:2               unescaped `b`
+1:2 - 1:3             "\""
+1:3 - 1:4           ":"
+1:4 - 1:5           value: value
+1:4 - 1:5             number
+1:4 - 1:5               int
+1:4 - 1:5                 digit1_9 `1`
+1:5 - 1:6         "}"
 
 ==================
-Reject objects syntax: "{\"a\" \"b\":1}"
-:error
+Member recovery preserves a quoted name after a missing colon
+:cst
 ==================
 {"a" "b":1}
 ---
+0:0  - 0:11   json_text
+0:0  - 0:11     value
+0:0  - 0:11       object
+0:0  - 0:1          "{"
+0:1  - 0:5          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:5  - 0:5            issue: syntax_issue
+0:5  - 0:5              invalid_syntax
+0:5  - 0:5                missing_name_separator
+0:5  - 0:5            issue: syntax_issue
+0:5  - 0:5              invalid_syntax
+0:5  - 0:5                missing_value
+0:5  - 0:5          issue: syntax_issue
+0:5  - 0:5            invalid_syntax
+0:5  - 0:5              missing_value_separator
+0:5  - 0:10         member
+0:5  - 0:8            name: string
+0:5  - 0:6              "\""
+0:6  - 0:7              char
+0:6  - 0:7                unescaped `b`
+0:7  - 0:8              "\""
+0:8  - 0:9            ":"
+0:9  - 0:10           value: value
+0:9  - 0:10             number
+0:9  - 0:10               int
+0:9  - 0:10                 digit1_9 `1`
+0:10 - 0:11         "}"
 
 ==================
-Reject objects syntax: "{\"a\": 1:2}"
-:error
+Member recovery preserves a numeric name
+:cst
 ==================
 {"a": 1:2}
 ---
+0:0  - 0:10   json_text
+0:0  - 0:10     value
+0:0  - 0:10       object
+0:0  - 0:1          "{"
+0:1  - 0:6          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:6  - 0:6            issue: syntax_issue
+0:6  - 0:6              invalid_syntax
+0:6  - 0:6                missing_value
+0:6  - 0:6          issue: syntax_issue
+0:6  - 0:6            invalid_syntax
+0:6  - 0:6              missing_value_separator
+0:6  - 0:9          member
+0:6  - 0:7            issue: syntax_issue
+0:6  - 0:7              invalid_syntax
+0:6  - 0:7                invalid_member_name
+0:6  - 0:7                  value
+0:6  - 0:7                    number
+0:6  - 0:7                      int
+0:6  - 0:7                        digit1_9 `1`
+0:7  - 0:8            ":"
+0:8  - 0:9            value: value
+0:8  - 0:9              number
+0:8  - 0:9                int
+0:8  - 0:9                  digit1_9 `2`
+0:9  - 0:10         "}"
 
 ==================
-Reject objects syntax: "{\"a\":1 :2}"
-:error
+Member recovery preserves a numeric name with layout before its colon
+:cst
 ==================
 {"a":1 :2}
 ---
+0:0  - 0:10   json_text
+0:0  - 0:10     value
+0:0  - 0:10       object
+0:0  - 0:1          "{"
+0:1  - 0:5          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:5  - 0:5            issue: syntax_issue
+0:5  - 0:5              invalid_syntax
+0:5  - 0:5                missing_value
+0:5  - 0:5          issue: syntax_issue
+0:5  - 0:5            invalid_syntax
+0:5  - 0:5              missing_value_separator
+0:5  - 0:9          member
+0:5  - 0:6            issue: syntax_issue
+0:5  - 0:6              invalid_syntax
+0:5  - 0:6                invalid_member_name
+0:5  - 0:6                  value
+0:5  - 0:6                    number
+0:5  - 0:6                      int
+0:5  - 0:6                        digit1_9 `1`
+0:7  - 0:8            ":"
+0:8  - 0:9            value: value
+0:8  - 0:9              number
+0:8  - 0:9                int
+0:8  - 0:9                  digit1_9 `2`
+0:9  - 0:10         "}"
 
 ==================
-Reject objects syntax: "{\"a\":foo:1}"
-:error
+Member recovery preserves a bare word name
+:cst
 ==================
 {"a":foo:1}
 ---
+0:0  - 0:11   json_text
+0:0  - 0:11     value
+0:0  - 0:11       object
+0:0  - 0:1          "{"
+0:1  - 0:5          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:5  - 0:5            issue: syntax_issue
+0:5  - 0:5              invalid_syntax
+0:5  - 0:5                missing_value
+0:5  - 0:5          issue: syntax_issue
+0:5  - 0:5            invalid_syntax
+0:5  - 0:5              missing_value_separator
+0:5  - 0:10         member
+0:5  - 0:8            issue: syntax_issue
+0:5  - 0:8              invalid_syntax
+0:5  - 0:8                invalid_member_name `foo`
+0:8  - 0:9            ":"
+0:9  - 0:10           value: value
+0:9  - 0:10             number
+0:9  - 0:10               int
+0:9  - 0:10                 digit1_9 `1`
+0:10 - 0:11         "}"
 
 ==================
-Reject objects syntax: "{\"a\":\"b\\\":c\":1}"
-:error
+Member recovery preserves a name containing an escaped quote and colon
+:cst
 ==================
 {"a":"b\":c":1}
 ---
+0:0  - 0:15   json_text
+0:0  - 0:15     value
+0:0  - 0:15       object
+0:0  - 0:1          "{"
+0:1  - 0:5          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:5  - 0:5            issue: syntax_issue
+0:5  - 0:5              invalid_syntax
+0:5  - 0:5                missing_value
+0:5  - 0:5          issue: syntax_issue
+0:5  - 0:5            invalid_syntax
+0:5  - 0:5              missing_value_separator
+0:5  - 0:14         member
+0:5  - 0:12           name: string
+0:5  - 0:6              "\""
+0:6  - 0:7              char
+0:6  - 0:7                unescaped `b`
+0:7  - 0:9              char
+0:7  - 0:8                "\\"
+0:8  - 0:9                "\""
+0:9  - 0:10             char
+0:9  - 0:10               unescaped `:`
+0:10 - 0:11             char
+0:10 - 0:11               unescaped `c`
+0:11 - 0:12             "\""
+0:12 - 0:13           ":"
+0:13 - 0:14           value: value
+0:13 - 0:14             number
+0:13 - 0:14               int
+0:13 - 0:14                 digit1_9 `1`
+0:14 - 0:15         "}"
 
 ==================
-Reject objects syntax: "[{\"a\":true:1}]"
-:error
+Member recovery preserves a literal name inside an array's object
+:cst
 ==================
 [{"a":true:1}]
 ---
+0:0  - 0:14   json_text
+0:0  - 0:14     value
+0:0  - 0:14       array
+0:0  - 0:1          "["
+0:1  - 0:13         value
+0:1  - 0:13           object
+0:1  - 0:2              "{"
+0:2  - 0:6              member
+0:2  - 0:5                name: string
+0:2  - 0:3                  "\""
+0:3  - 0:4                  char
+0:3  - 0:4                    unescaped `a`
+0:4  - 0:5                  "\""
+0:5  - 0:6                ":"
+0:6  - 0:6                issue: syntax_issue
+0:6  - 0:6                  invalid_syntax
+0:6  - 0:6                    missing_value
+0:6  - 0:6              issue: syntax_issue
+0:6  - 0:6                invalid_syntax
+0:6  - 0:6                  missing_value_separator
+0:6  - 0:12             member
+0:6  - 0:10               issue: syntax_issue
+0:6  - 0:10                 invalid_syntax
+0:6  - 0:10                   invalid_member_name
+0:6  - 0:10                     value
+0:6  - 0:10                       "true"
+0:10 - 0:11               ":"
+0:11 - 0:12               value: value
+0:11 - 0:12                 number
+0:11 - 0:12                   int
+0:11 - 0:12                     digit1_9 `1`
+0:12 - 0:13             "}"
+0:13 - 0:14         "]"
 
 ==================
-Reject objects syntax: "{\"a\":\"b\" \"c\":1}"
-:error
+Member lookahead stops at the next value or container boundary: {"a":"b" "c":1}
+:cst
 ==================
 {"a":"b" "c":1}
 ---
+0:0  - 0:15   json_text
+0:0  - 0:15     value
+0:0  - 0:15       object
+0:0  - 0:1          "{"
+0:1  - 0:8          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:5  - 0:8            value: value
+0:5  - 0:8              string
+0:5  - 0:6                "\""
+0:6  - 0:7                char
+0:6  - 0:7                  unescaped `b`
+0:7  - 0:8                "\""
+0:9  - 0:9          issue: syntax_issue
+0:9  - 0:9            invalid_syntax
+0:9  - 0:9              missing_value_separator
+0:9  - 0:14         member
+0:9  - 0:12           name: string
+0:9  - 0:10             "\""
+0:10 - 0:11             char
+0:10 - 0:11               unescaped `c`
+0:11 - 0:12             "\""
+0:12 - 0:13           ":"
+0:13 - 0:14           value: value
+0:13 - 0:14             number
+0:13 - 0:14               int
+0:13 - 0:14                 digit1_9 `1`
+0:14 - 0:15         "}"
 
 ==================
-Reject objects syntax: "{\"a\":\"b\"}:1"
-:error
+Member lookahead stops at the next value or container boundary: {"a":"b"}:1
+:cst
 ==================
 {"a":"b"}:1
 ---
+0:0  - 0:11   json_text
+0:0  - 0:9      value
+0:0  - 0:9        object
+0:0  - 0:1          "{"
+0:1  - 0:8          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:5  - 0:8            value: value
+0:5  - 0:8              string
+0:5  - 0:6                "\""
+0:6  - 0:7                char
+0:6  - 0:7                  unescaped `b`
+0:7  - 0:8                "\""
+0:8  - 0:9          "}"
+0:9  - 0:10     issue: syntax_issue
+0:9  - 0:10       invalid_syntax
+0:9  - 0:10         invalid_character `:`
+0:10 - 0:11     issue: syntax_issue
+0:10 - 0:11       invalid_syntax
+0:10 - 0:11         unexpected_value
+0:10 - 0:11           value
+0:10 - 0:11             number
+0:10 - 0:11               int
+0:10 - 0:11                 digit1_9 `1`
 
 ==================
-Reject objects syntax: "{\"a\":[\"b\"]:1}"
-:error
+Member lookahead stops at the next value or container boundary: {"a":["b"]:1}
+:cst
 ==================
 {"a":["b"]:1}
 ---
+0:0  - 0:13   json_text
+0:0  - 0:13     value
+0:0  - 0:13       object
+0:0  - 0:1          "{"
+0:1  - 0:10         member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:5  - 0:10           value: value
+0:5  - 0:10             array
+0:5  - 0:6                "["
+0:6  - 0:9                value
+0:6  - 0:9                  string
+0:6  - 0:7                    "\""
+0:7  - 0:8                    char
+0:7  - 0:8                      unescaped `b`
+0:8  - 0:9                    "\""
+0:9  - 0:10               "]"
+0:10 - 0:10         issue: syntax_issue
+0:10 - 0:10           invalid_syntax
+0:10 - 0:10             missing_value_separator
+0:10 - 0:12         member
+0:10 - 0:10           issue: syntax_issue
+0:10 - 0:10             invalid_syntax
+0:10 - 0:10               missing_member_name
+0:10 - 0:11           ":"
+0:11 - 0:12           value: value
+0:11 - 0:12             number
+0:11 - 0:12               int
+0:11 - 0:12                 digit1_9 `1`
+0:12 - 0:13         "}"
 
 ==================
-Reject objects syntax: "{\"a\":{\"b\":1}:2}"
-:error
+Member lookahead stops at the next value or container boundary: {"a":{"b":1}:2}
+:cst
 ==================
 {"a":{"b":1}:2}
 ---
+0:0  - 0:15   json_text
+0:0  - 0:15     value
+0:0  - 0:15       object
+0:0  - 0:1          "{"
+0:1  - 0:12         member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:5  - 0:12           value: value
+0:5  - 0:12             object
+0:5  - 0:6                "{"
+0:6  - 0:11               member
+0:6  - 0:9                  name: string
+0:6  - 0:7                    "\""
+0:7  - 0:8                    char
+0:7  - 0:8                      unescaped `b`
+0:8  - 0:9                    "\""
+0:9  - 0:10                 ":"
+0:10 - 0:11                 value: value
+0:10 - 0:11                   number
+0:10 - 0:11                     int
+0:10 - 0:11                       digit1_9 `1`
+0:11 - 0:12               "}"
+0:12 - 0:12         issue: syntax_issue
+0:12 - 0:12           invalid_syntax
+0:12 - 0:12             missing_value_separator
+0:12 - 0:14         member
+0:12 - 0:12           issue: syntax_issue
+0:12 - 0:12             invalid_syntax
+0:12 - 0:12               missing_member_name
+0:12 - 0:13           ":"
+0:13 - 0:14           value: value
+0:13 - 0:14             number
+0:13 - 0:14               int
+0:13 - 0:14                 digit1_9 `2`
+0:14 - 0:15         "}"
 
 ==================
-Reject objects syntax: "{\"a\" ]:1}"
-:error
+A stray closing ends the member before a nameless member
+:cst
 ==================
 {"a" ]:1}
 ---
+0:0 - 0:9   json_text
+0:0 - 0:9     value
+0:0 - 0:9       object
+0:0 - 0:1         "{"
+0:1 - 0:5         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:5 - 0:5           issue: syntax_issue
+0:5 - 0:5             invalid_syntax
+0:5 - 0:5               missing_name_separator
+0:5 - 0:5           issue: syntax_issue
+0:5 - 0:5             invalid_syntax
+0:5 - 0:5               missing_value
+0:5 - 0:6         issue: syntax_issue
+0:5 - 0:6           invalid_syntax
+0:5 - 0:6             invalid_character `]`
+0:6 - 0:6         issue: syntax_issue
+0:6 - 0:6           invalid_syntax
+0:6 - 0:6             missing_value_separator
+0:6 - 0:8         member
+0:6 - 0:6           issue: syntax_issue
+0:6 - 0:6             invalid_syntax
+0:6 - 0:6               missing_member_name
+0:6 - 0:7           ":"
+0:7 - 0:8           value: value
+0:7 - 0:8             number
+0:7 - 0:8               int
+0:7 - 0:8                 digit1_9 `1`
+0:8 - 0:9         "}"
 
 ==================
-Reject objects syntax: "{\"a\" ] \"b\":1}"
-:error
+A stray closing ends the member before a named member
+:cst
 ==================
 {"a" ] "b":1}
 ---
+0:0  - 0:13   json_text
+0:0  - 0:13     value
+0:0  - 0:13       object
+0:0  - 0:1          "{"
+0:1  - 0:5          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:5  - 0:5            issue: syntax_issue
+0:5  - 0:5              invalid_syntax
+0:5  - 0:5                missing_name_separator
+0:5  - 0:5            issue: syntax_issue
+0:5  - 0:5              invalid_syntax
+0:5  - 0:5                missing_value
+0:5  - 0:6          issue: syntax_issue
+0:5  - 0:6            invalid_syntax
+0:5  - 0:6              invalid_character `]`
+0:7  - 0:7          issue: syntax_issue
+0:7  - 0:7            invalid_syntax
+0:7  - 0:7              missing_value_separator
+0:7  - 0:12         member
+0:7  - 0:10           name: string
+0:7  - 0:8              "\""
+0:8  - 0:9              char
+0:8  - 0:9                unescaped `b`
+0:9  - 0:10             "\""
+0:10 - 0:11           ":"
+0:11 - 0:12           value: value
+0:11 - 0:12             number
+0:11 - 0:12               int
+0:11 - 0:12                 digit1_9 `1`
+0:12 - 0:13         "}"
 
 ==================
-Reject objects syntax: "{\"a\": ]:1}"
-:error
+A stray closing ends a member after its colon
+:cst
 ==================
 {"a": ]:1}
 ---
+0:0  - 0:10   json_text
+0:0  - 0:10     value
+0:0  - 0:10       object
+0:0  - 0:1          "{"
+0:1  - 0:6          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            ":"
+0:6  - 0:6            issue: syntax_issue
+0:6  - 0:6              invalid_syntax
+0:6  - 0:6                missing_value
+0:6  - 0:7          issue: syntax_issue
+0:6  - 0:7            invalid_syntax
+0:6  - 0:7              invalid_character `]`
+0:7  - 0:7          issue: syntax_issue
+0:7  - 0:7            invalid_syntax
+0:7  - 0:7              missing_value_separator
+0:7  - 0:9          member
+0:7  - 0:7            issue: syntax_issue
+0:7  - 0:7              invalid_syntax
+0:7  - 0:7                missing_member_name
+0:7  - 0:8            ":"
+0:8  - 0:9            value: value
+0:8  - 0:9              number
+0:8  - 0:9                int
+0:8  - 0:9                  digit1_9 `1`
+0:9  - 0:10         "}"
 
 ==================
-Reject objects syntax: "{\"a\"\u0001 ]:1}"
-:error
+Member gaps precede missing syntax at a stray closing
+:cst
 ==================
 {"a" ]:1}
 ---
+0:0  - 0:10   json_text
+0:0  - 0:10     value
+0:0  - 0:10       object
+0:0  - 0:1          "{"
+0:1  - 0:6          member
+0:1  - 0:4            name: string
+0:1  - 0:2              "\""
+0:2  - 0:3              char
+0:2  - 0:3                unescaped `a`
+0:3  - 0:4              "\""
+0:4  - 0:5            issue: syntax_issue
+0:4  - 0:5              invalid_syntax
+0:4  - 0:5                invalid_character ``
+0:6  - 0:6            issue: syntax_issue
+0:6  - 0:6              invalid_syntax
+0:6  - 0:6                missing_name_separator
+0:6  - 0:6            issue: syntax_issue
+0:6  - 0:6              invalid_syntax
+0:6  - 0:6                missing_value
+0:6  - 0:7          issue: syntax_issue
+0:6  - 0:7            invalid_syntax
+0:6  - 0:7              invalid_character `]`
+0:7  - 0:7          issue: syntax_issue
+0:7  - 0:7            invalid_syntax
+0:7  - 0:7              missing_value_separator
+0:7  - 0:9          member
+0:7  - 0:7            issue: syntax_issue
+0:7  - 0:7              invalid_syntax
+0:7  - 0:7                missing_member_name
+0:7  - 0:8            ":"
+0:8  - 0:9            value: value
+0:8  - 0:9              number
+0:8  - 0:9                int
+0:8  - 0:9                  digit1_9 `1`
+0:9  - 0:10         "}"
 
 ==================
-Reject objects syntax: "{,}"
-:error
+Empty object cannot have a comma
+:cst
 ==================
 {,}
 ---
+0:0 - 0:3   json_text
+0:0 - 0:3     value
+0:0 - 0:3       object
+0:0 - 0:1         "{"
+0:1 - 0:2         issue: syntax_issue
+0:1 - 0:2           invalid_syntax
+0:1 - 0:2             unexpected_separator
+0:1 - 0:2               ","
+0:2 - 0:3         "}"
 
 ==================
-Reject objects syntax: "{\"a\":1,}"
-:error
+Object trailing comma is an unexpected separator
+:cst
 ==================
 {"a":1,}
 ---
+0:0 - 0:8   json_text
+0:0 - 0:8     value
+0:0 - 0:8       object
+0:0 - 0:1         "{"
+0:1 - 0:6         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:6           value: value
+0:5 - 0:6             number
+0:5 - 0:6               int
+0:5 - 0:6                 digit1_9 `1`
+0:6 - 0:7         issue: syntax_issue
+0:6 - 0:7           invalid_syntax
+0:6 - 0:7             unexpected_separator
+0:6 - 0:7               ","
+0:7 - 0:8         "}"
 
 ==================
-Reject objects syntax: "{\"a\":1,,}"
-:error
+Object duplicate trailing comma
+:cst
 ==================
 {"a":1,,}
 ---
+0:0 - 0:9   json_text
+0:0 - 0:9     value
+0:0 - 0:9       object
+0:0 - 0:1         "{"
+0:1 - 0:6         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:6           value: value
+0:5 - 0:6             number
+0:5 - 0:6               int
+0:5 - 0:6                 digit1_9 `1`
+0:6 - 0:7         issue: syntax_issue
+0:6 - 0:7           invalid_syntax
+0:6 - 0:7             unexpected_separator
+0:6 - 0:7               ","
+0:7 - 0:8         issue: syntax_issue
+0:7 - 0:8           invalid_syntax
+0:7 - 0:8             unexpected_separator
+0:7 - 0:8               ","
+0:8 - 0:9         "}"
 
 ==================
-Reject objects syntax: "{\"a\":[1,}"
-:error
+Ancestor object closing after an array comma
+:cst
 ==================
 {"a":[1,}
 ---
+0:0 - 0:9   json_text
+0:0 - 0:9     value
+0:0 - 0:9       object
+0:0 - 0:1         "{"
+0:1 - 0:8         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:8           value: value
+0:5 - 0:8             array
+0:5 - 0:6               "["
+0:6 - 0:7               value
+0:6 - 0:7                 number
+0:6 - 0:7                   int
+0:6 - 0:7                     digit1_9 `1`
+0:7 - 0:8               issue: syntax_issue
+0:7 - 0:8                 invalid_syntax
+0:7 - 0:8                   unexpected_separator
+0:7 - 0:8                     ","
+0:8 - 0:8               issue: syntax_issue
+0:8 - 0:8                 invalid_syntax
+0:8 - 0:8                   missing_array_close
+0:8 - 0:9         "}"
 
 ==================
-Reject objects syntax: "{\"a\":1,\u0001}"
-:error
+Object closing after a comma and a control
+:cst
 ==================
 {"a":1,}
 ---
+0:0 - 0:9   json_text
+0:0 - 0:9     value
+0:0 - 0:9       object
+0:0 - 0:1         "{"
+0:1 - 0:6         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:6           value: value
+0:5 - 0:6             number
+0:5 - 0:6               int
+0:5 - 0:6                 digit1_9 `1`
+0:6 - 0:7         issue: syntax_issue
+0:6 - 0:7           invalid_syntax
+0:6 - 0:7             unexpected_separator
+0:6 - 0:7               ","
+0:7 - 0:8         issue: syntax_issue
+0:7 - 0:8           invalid_syntax
+0:7 - 0:8             invalid_character ``
+0:8 - 0:9         "}"
 
 ==================
-Reject objects syntax: "{\"a\":"
-:error
+Member value at EOF
+:cst
 ==================
 {"a":
 ---
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       object
+0:0 - 0:1         "{"
+0:1 - 0:5         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:5           issue: syntax_issue
+0:5 - 0:5             incomplete_syntax
+0:5 - 0:5               missing_value
+0:5 - 0:5         issue: syntax_issue
+0:5 - 0:5           incomplete_syntax
+0:5 - 0:5             missing_object_close
 
 ==================
-Reject objects syntax: "{\"a\""
-:error
+Independent missing member components at EOF
+:cst
 ==================
 {"a"
 ---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       object
+0:0 - 0:1         "{"
+0:1 - 0:4         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:4           issue: syntax_issue
+0:4 - 0:4             incomplete_syntax
+0:4 - 0:4               missing_name_separator
+0:4 - 0:4           issue: syntax_issue
+0:4 - 0:4             incomplete_syntax
+0:4 - 0:4               missing_value
+0:4 - 0:4         issue: syntax_issue
+0:4 - 0:4           incomplete_syntax
+0:4 - 0:4             missing_object_close
 
 ==================
-Reject objects syntax: "{\"a\":1,"
-:error
+Object comma at EOF
+:cst
 ==================
 {"a":1,
 ---
+0:0 - 0:7   json_text
+0:0 - 0:7     value
+0:0 - 0:7       object
+0:0 - 0:1         "{"
+0:1 - 0:6         member
+0:1 - 0:4           name: string
+0:1 - 0:2             "\""
+0:2 - 0:3             char
+0:2 - 0:3               unescaped `a`
+0:3 - 0:4             "\""
+0:4 - 0:5           ":"
+0:5 - 0:6           value: value
+0:5 - 0:6             number
+0:5 - 0:6               int
+0:5 - 0:6                 digit1_9 `1`
+0:6 - 0:7         ","
+0:7 - 0:7         issue: syntax_issue
+0:7 - 0:7           incomplete_syntax
+0:7 - 0:7             missing_member
+0:7 - 0:7         issue: syntax_issue
+0:7 - 0:7           incomplete_syntax
+0:7 - 0:7             missing_object_close
+
+==================
+Missing string quote before newline preserves the next member
+==================
+{"a":"open
+,"b":2}
+---
+(json_text
+  (value
+    (object
+      (member
+        name: (string (char (unescaped)))
+        value: (value
+          (string
+            (char (unescaped))
+            (char (unescaped))
+            (char (unescaped))
+            (char (unescaped))
+            issue: (syntax_issue (invalid_syntax (missing_string_close))))))
+      (member
+        name: (string (char (unescaped)))
+        value: (value (number (int (digit1_9))))))))

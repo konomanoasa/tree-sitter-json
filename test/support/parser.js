@@ -129,10 +129,8 @@ function assertIncrementalEqualsFresh(initial, edits, source) {
     );
     const fresh = parse(source);
     const incremental = parse(initial, edits);
-    if (!fresh.hasError) {
-      assert.equal(incremental.hasError, false, incremental.cst);
-      assert.deepEqual(incremental.nodes, fresh.nodes);
-    }
+    assert.equal(incremental.hasError, fresh.hasError, incremental.cst);
+    assert.deepEqual(incremental.nodes, fresh.nodes);
     return incremental;
   } catch (error) {
     if (error instanceof Error)
@@ -141,6 +139,7 @@ function assertIncrementalEqualsFresh(initial, edits, source) {
   }
 }
 
+// The CLI exposes only the final CST, so each history prefix must be replayed.
 function assertEditHistory({ source, edits }) {
   for (let count = 1; count <= edits.length; count++) {
     const history = edits.slice(0, count);

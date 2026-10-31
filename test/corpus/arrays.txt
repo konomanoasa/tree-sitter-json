@@ -1,5 +1,5 @@
 ==================
-Empty array contains only its delimiters
+Empty array has no syntax issues
 :cst
 ==================
 []
@@ -11,120 +11,399 @@ Empty array contains only its delimiters
 0:1 - 0:2         "]"
 
 ==================
-Reject arrays syntax: "[1,,2,]"
-:error
+Duplicate and trailing commas are actual source
 ==================
 [1,,2,]
 ---
+(json_text
+  (value
+    (array
+      (value (number (int (digit1_9))))
+      issue: (syntax_issue (invalid_syntax (unexpected_separator)))
+      (value (number (int (digit1_9))))
+      issue: (syntax_issue (invalid_syntax (unexpected_separator))))))
 
 ==================
-Reject arrays syntax: "[1 2]"
-:error
+Missing array comma
+:cst
 ==================
 [1 2]
 ---
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:3 - 0:3         issue: syntax_issue
+0:3 - 0:3           invalid_syntax
+0:3 - 0:3             missing_value_separator
+0:3 - 0:4         value
+0:3 - 0:4           number
+0:3 - 0:4             int
+0:3 - 0:4               digit1_9 `2`
+0:4 - 0:5         "]"
 
 ==================
-Reject arrays syntax: "[{\"a\":1]"
-:error
+Ancestor array closing
+:cst
 ==================
 [{"a":1]
 ---
+0:0 - 0:8   json_text
+0:0 - 0:8     value
+0:0 - 0:8       array
+0:0 - 0:1         "["
+0:1 - 0:7         value
+0:1 - 0:7           object
+0:1 - 0:2             "{"
+0:2 - 0:7             member
+0:2 - 0:5               name: string
+0:2 - 0:3                 "\""
+0:3 - 0:4                 char
+0:3 - 0:4                   unescaped `a`
+0:4 - 0:5                 "\""
+0:5 - 0:6               ":"
+0:6 - 0:7               value: value
+0:6 - 0:7                 number
+0:6 - 0:7                   int
+0:6 - 0:7                     digit1_9 `1`
+0:7 - 0:7             issue: syntax_issue
+0:7 - 0:7               invalid_syntax
+0:7 - 0:7                 missing_object_close
+0:7 - 0:8         "]"
 
 ==================
-Reject arrays syntax: "[1}]"
-:error
+Stray object closing inside array
+:cst
 ==================
 [1}]
 ---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         issue: syntax_issue
+0:2 - 0:3           invalid_syntax
+0:2 - 0:3             invalid_character `}`
+0:3 - 0:4         "]"
 
 ==================
-Reject arrays syntax: "[,,1,,2,,]"
-:error
+Leading, duplicate and trailing array commas
+:cst
 ==================
 [,,1,,2,,]
 ---
+0:0  - 0:10   json_text
+0:0  - 0:10     value
+0:0  - 0:10       array
+0:0  - 0:1          "["
+0:1  - 0:2          issue: syntax_issue
+0:1  - 0:2            invalid_syntax
+0:1  - 0:2              unexpected_separator
+0:1  - 0:2                ","
+0:2  - 0:3          issue: syntax_issue
+0:2  - 0:3            invalid_syntax
+0:2  - 0:3              unexpected_separator
+0:2  - 0:3                ","
+0:3  - 0:4          value
+0:3  - 0:4            number
+0:3  - 0:4              int
+0:3  - 0:4                digit1_9 `1`
+0:4  - 0:5          ","
+0:5  - 0:6          issue: syntax_issue
+0:5  - 0:6            invalid_syntax
+0:5  - 0:6              unexpected_separator
+0:5  - 0:6                ","
+0:6  - 0:7          value
+0:6  - 0:7            number
+0:6  - 0:7              int
+0:6  - 0:7                digit1_9 `2`
+0:7  - 0:8          issue: syntax_issue
+0:7  - 0:8            invalid_syntax
+0:7  - 0:8              unexpected_separator
+0:7  - 0:8                ","
+0:8  - 0:9          issue: syntax_issue
+0:8  - 0:9            invalid_syntax
+0:8  - 0:9              unexpected_separator
+0:8  - 0:9                ","
+0:9  - 0:10         "]"
 
 ==================
-Reject arrays syntax: "[1,}2]"
-:error
+Array values survive a stray closing after a comma
+:cst
 ==================
 [1,}2]
 ---
+0:0 - 0:6   json_text
+0:0 - 0:6     value
+0:0 - 0:6       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         ","
+0:3 - 0:4         issue: syntax_issue
+0:3 - 0:4           invalid_syntax
+0:3 - 0:4             invalid_character `}`
+0:4 - 0:5         value
+0:4 - 0:5           number
+0:4 - 0:5             int
+0:4 - 0:5               digit1_9 `2`
+0:5 - 0:6         "]"
 
 ==================
-Reject arrays syntax: "[,]"
-:error
+Empty array cannot have a comma
+:cst
 ==================
 [,]
 ---
+0:0 - 0:3   json_text
+0:0 - 0:3     value
+0:0 - 0:3       array
+0:0 - 0:1         "["
+0:1 - 0:2         issue: syntax_issue
+0:1 - 0:2           invalid_syntax
+0:1 - 0:2             unexpected_separator
+0:1 - 0:2               ","
+0:2 - 0:3         "]"
 
 ==================
-Reject arrays syntax: "[1,,2]"
-:error
+Array duplicate comma before a value
+:cst
 ==================
 [1,,2]
 ---
+0:0 - 0:6   json_text
+0:0 - 0:6     value
+0:0 - 0:6       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         ","
+0:3 - 0:4         issue: syntax_issue
+0:3 - 0:4           invalid_syntax
+0:3 - 0:4             unexpected_separator
+0:3 - 0:4               ","
+0:4 - 0:5         value
+0:4 - 0:5           number
+0:4 - 0:5             int
+0:4 - 0:5               digit1_9 `2`
+0:5 - 0:6         "]"
 
 ==================
-Reject arrays syntax: "[1,:2]"
-:error
+Array colon after a comma keeps the following value
+:cst
 ==================
 [1,:2]
 ---
+0:0 - 0:6   json_text
+0:0 - 0:6     value
+0:0 - 0:6       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         ","
+0:3 - 0:4         issue: syntax_issue
+0:3 - 0:4           invalid_syntax
+0:3 - 0:4             invalid_character `:`
+0:4 - 0:5         value
+0:4 - 0:5           number
+0:4 - 0:5             int
+0:4 - 0:5               digit1_9 `2`
+0:5 - 0:6         "]"
 
 ==================
-Reject arrays syntax: "[1,]"
-:error
+Array trailing comma is an unexpected separator
+:cst
 ==================
 [1,]
 ---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         issue: syntax_issue
+0:2 - 0:3           invalid_syntax
+0:2 - 0:3             unexpected_separator
+0:2 - 0:3               ","
+0:3 - 0:4         "]"
 
 ==================
-Reject arrays syntax: "[1,,]"
-:error
+Array duplicate trailing comma
+:cst
 ==================
 [1,,]
 ---
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         issue: syntax_issue
+0:2 - 0:3           invalid_syntax
+0:2 - 0:3             unexpected_separator
+0:2 - 0:3               ","
+0:3 - 0:4         issue: syntax_issue
+0:3 - 0:4           invalid_syntax
+0:3 - 0:4             unexpected_separator
+0:3 - 0:4               ","
+0:4 - 0:5         "]"
 
 ==================
-Reject arrays syntax: "[1,}"
-:error
+Stray closing after an array comma at EOF
+:cst
 ==================
 [1,}
 ---
+0:0 - 0:4   json_text
+0:0 - 0:4     value
+0:0 - 0:4       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         ","
+0:3 - 0:4         issue: syntax_issue
+0:3 - 0:4           invalid_syntax
+0:3 - 0:4             invalid_character `}`
+0:4 - 0:4         issue: syntax_issue
+0:4 - 0:4           incomplete_syntax
+0:4 - 0:4             missing_value
+0:4 - 0:4         issue: syntax_issue
+0:4 - 0:4           incomplete_syntax
+0:4 - 0:4             missing_array_close
 
 ==================
-Reject arrays syntax: "[{\"a\":1,]"
-:error
+Ancestor array closing after an object comma
+:cst
 ==================
 [{"a":1,]
 ---
+0:0 - 0:9   json_text
+0:0 - 0:9     value
+0:0 - 0:9       array
+0:0 - 0:1         "["
+0:1 - 0:8         value
+0:1 - 0:8           object
+0:1 - 0:2             "{"
+0:2 - 0:7             member
+0:2 - 0:5               name: string
+0:2 - 0:3                 "\""
+0:3 - 0:4                 char
+0:3 - 0:4                   unescaped `a`
+0:4 - 0:5                 "\""
+0:5 - 0:6               ":"
+0:6 - 0:7               value: value
+0:6 - 0:7                 number
+0:6 - 0:7                   int
+0:6 - 0:7                     digit1_9 `1`
+0:7 - 0:8             issue: syntax_issue
+0:7 - 0:8               invalid_syntax
+0:7 - 0:8                 unexpected_separator
+0:7 - 0:8                   ","
+0:8 - 0:8             issue: syntax_issue
+0:8 - 0:8               invalid_syntax
+0:8 - 0:8                 missing_object_close
+0:8 - 0:9         "]"
 
 ==================
-Reject arrays syntax: "[1,}]"
-:error
+Array closing after a comma and a stray closing
+:cst
 ==================
 [1,}]
 ---
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         issue: syntax_issue
+0:2 - 0:3           invalid_syntax
+0:2 - 0:3             unexpected_separator
+0:2 - 0:3               ","
+0:3 - 0:4         issue: syntax_issue
+0:3 - 0:4           invalid_syntax
+0:3 - 0:4             invalid_character `}`
+0:4 - 0:5         "]"
 
 ==================
-Reject arrays syntax: "[1,:]"
-:error
+Array closing after a comma and a stray colon
+:cst
 ==================
 [1,:]
 ---
+0:0 - 0:5   json_text
+0:0 - 0:5     value
+0:0 - 0:5       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         issue: syntax_issue
+0:2 - 0:3           invalid_syntax
+0:2 - 0:3             unexpected_separator
+0:2 - 0:3               ","
+0:3 - 0:4         issue: syntax_issue
+0:3 - 0:4           invalid_syntax
+0:3 - 0:4             invalid_character `:`
+0:4 - 0:5         "]"
 
 ==================
-Reject arrays syntax: "["
-:error
+Unfinished array retains its opening and missing closing position
+:cst
 ==================
 [
 ---
+0:0 - 0:1   json_text
+0:0 - 0:1     value
+0:0 - 0:1       array
+0:0 - 0:1         "["
+0:1 - 0:1         issue: syntax_issue
+0:1 - 0:1           incomplete_syntax
+0:1 - 0:1             missing_array_close
 
 ==================
-Reject arrays syntax: "[1,"
-:error
+Array comma at EOF
+:cst
 ==================
 [1,
 ---
+0:0 - 0:3   json_text
+0:0 - 0:3     value
+0:0 - 0:3       array
+0:0 - 0:1         "["
+0:1 - 0:2         value
+0:1 - 0:2           number
+0:1 - 0:2             int
+0:1 - 0:2               digit1_9 `1`
+0:2 - 0:3         ","
+0:3 - 0:3         issue: syntax_issue
+0:3 - 0:3           incomplete_syntax
+0:3 - 0:3             missing_value
+0:3 - 0:3         issue: syntax_issue
+0:3 - 0:3           incomplete_syntax
+0:3 - 0:3             missing_array_close
