@@ -1,6 +1,6 @@
 [project]
 name = "konomanoasa-tree-sitter-json"
-version = "0.2.3"
+version = "0.3.0"
 description = "Tree-sitter grammar for JSON."
 readme = "README.md"
 license = "MIT"
