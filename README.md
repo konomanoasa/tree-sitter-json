@@ -3,6 +3,7 @@
 [![CI](https://github.com/konomanoasa/tree-sitter-json/actions/workflows/ci.yaml/badge.svg)](https://github.com/konomanoasa/tree-sitter-json/actions/workflows/ci.yaml)
 [![crates.io](https://img.shields.io/crates/v/konomanoasa-tree-sitter-json)](https://crates.io/crates/konomanoasa-tree-sitter-json)
 [![npm](https://img.shields.io/npm/v/@konomanoasa/tree-sitter-json)](https://www.npmjs.com/package/@konomanoasa/tree-sitter-json)
+[![PyPI](https://img.shields.io/pypi/v/konomanoasa-tree-sitter-json)](https://pypi.org/project/konomanoasa-tree-sitter-json/)
 
 [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammar for JSON.
 
