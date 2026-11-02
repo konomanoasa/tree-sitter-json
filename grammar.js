@@ -71,6 +71,7 @@ const absent = ($, part) =>
     issue($, `incomplete_missing_${part}`),
   );
 const digit = ($) => alias($._digit, $.digit);
+const hexdig = ($) => alias($._hexdig, $.hexdig);
 const value = ($, context) => alias($[`_value_${context}`], $.value);
 const memberGap = ($) =>
   repeat(
@@ -96,11 +97,7 @@ const badEscape = ($) =>
   seq(
     "\\",
     choice(
-      seq(
-        "u",
-        repeat(alias($._hexdig, $.hexdig)),
-        optional($._bad_escape_character),
-      ),
+      seq("u", repeat(hexdig($)), optional($._bad_escape_character)),
       optional($._bad_escape_character),
     ),
     $._bad_escape_end,
@@ -216,23 +213,17 @@ for (const context of ["root", "array", "object", "both"]) {
           ),
         ),
     );
-    rules[`_member_${context}`] = ($) =>
-      seq(
+    rules[`_member_${context}`] = ($) => {
+      const colon = alias($._name_separator, ":");
+      return seq(
         choice(
           seq(
             field("name", $.string),
             memberGap($),
-            choice(alias($._name_separator, ":"), absent($, "name_separator")),
+            choice(colon, absent($, "name_separator")),
           ),
-          seq(
-            issue($, `invalid_name_${context}`),
-            memberGap($),
-            alias($._name_separator, ":"),
-          ),
-          seq(
-            issue($, "invalid_missing_member_name"),
-            alias($._name_separator, ":"),
-          ),
+          seq(issue($, `invalid_name_${context}`), memberGap($), colon),
+          seq(issue($, "invalid_missing_member_name"), colon),
         ),
         memberGap($),
         choice(
@@ -240,6 +231,7 @@ for (const context of ["root", "array", "object", "both"]) {
           absent($, "value"),
         ),
       );
+    };
   }
 }
 for (const [kind, context] of [
@@ -311,10 +303,7 @@ export default grammar({
             "n",
             "r",
             "t",
-            seq(
-              "u",
-              ...Array.from({ length: 4 }, () => alias($._hexdig, $.hexdig)),
-            ),
+            seq("u", ...Array.from({ length: 4 }, () => hexdig($))),
           ),
         ),
         issue($, "invalid_escape"),
@@ -322,7 +311,7 @@ export default grammar({
         seq(
           $._undecodable_escape_start,
           "\\",
-          optional(seq("u", repeat(alias($._hexdig, $.hexdig)))),
+          optional(seq("u", repeat(hexdig($)))),
           issue($, "invalid_encoding"),
         ),
       ),

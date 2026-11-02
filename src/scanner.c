@@ -133,7 +133,6 @@ static inline bool emit(TSLexer *l, unsigned token) {
 }
 
 static inline bool finish_lookahead(TSLexer *l, unsigned token) {
-  // Continuation-byte edits can change the decoded lookahead character.
   if (!l->eof(l)) l->advance(l, false);
   return finish(l, token);
 }
@@ -162,12 +161,14 @@ missing(TSLexer *l, const bool *v, unsigned invalid, unsigned incomplete) {
   return v[token] && emit_zero_width(l, token);
 }
 
-static inline bool skip_member_gap(TSLexer *l) {
-  for (;;) {
-    while (space(l->lookahead)) l->advance(l, false);
-    if (!control(l) && l->lookahead != DECODE_ERROR) return true;
+static inline void skip_member_gap(TSLexer *l) {
+  while (space(l->lookahead) || control(l) || l->lookahead == DECODE_ERROR)
     l->advance(l, false);
-  }
+}
+
+static inline bool colon_follows(TSLexer *l) {
+  skip_member_gap(l);
+  return l->lookahead == ':';
 }
 
 static inline bool closes_container(int32_t c, const bool *v) {
@@ -203,14 +204,7 @@ static inline bool member_follows(TSLexer *l) {
     if (boundary(l)) return false;
     while (!boundary(l)) l->advance(l, false);
   }
-  return skip_member_gap(l) && l->lookahead == ':';
-}
-
-static inline bool start_member_value(TSLexer *l) {
-  return finish_lookahead(
-    l,
-    member_follows(l) ? INVALID_MISSING_VALUE : MEMBER_VALUE_START
-  );
+  return colon_follows(l);
 }
 
 struct Word {
@@ -264,12 +258,8 @@ static inline bool scan_word(TSLexer *l, const bool *v) {
     ? INCOMPLETE_VALUE
     : INVALID_VALUE;
   if (!v[BARE_MEMBER_NAME]) return v[token] && finish(l, token);
-  if (skip_member_gap(l) && l->lookahead == ':') token = BARE_MEMBER_NAME;
+  if (colon_follows(l)) token = BARE_MEMBER_NAME;
   return v[token] && finish_lookahead(l, token);
-}
-
-static inline bool scan_word_fragment(TSLexer *l) {
-  return !read_word(l).empty && finish_lookahead(l, WORD_FRAGMENT);
 }
 
 static inline bool scan_invalid_run(TSLexer *l, enum NumberPart part) {
@@ -327,15 +317,13 @@ static inline bool scan_comma(TSLexer *l, const bool *v) {
   if (!v[COMMA]) return take(l, EXTRA_COMMA);
   l->advance(l, false);
   l->mark_end(l);
-  unsigned token = COMMA;
-  while (skip_member_gap(l)) {
-    if (closes_container(l->lookahead, v)) {
-      token = EXTRA_COMMA;
-      break;
-    }
-    if (!stray(l->lookahead, v)) break;
+  skip_member_gap(l);
+  while (stray(l->lookahead, v)) {
     l->advance(l, false);
+    skip_member_gap(l);
   }
+  const unsigned token =
+    closes_container(l->lookahead, v) ? EXTRA_COMMA : COMMA;
   return v[token] && finish_lookahead(l, token);
 }
 
@@ -351,12 +339,17 @@ static inline bool scan_member_value_start(TSLexer *l, const bool *v) {
   )
     return false;
   l->mark_end(l);
-  return start_member_value(l);
+  return finish_lookahead(
+    l,
+    member_follows(l) ? INVALID_MISSING_VALUE : MEMBER_VALUE_START
+  );
 }
 
 static inline bool scan_word_tail(TSLexer *l, const bool *v) {
   if (v[WORD_END] && boundary(l)) return emit_zero_width(l, WORD_END);
-  return v[WORD_FRAGMENT] && scan_word_fragment(l);
+  return v[WORD_FRAGMENT] &&
+    !read_word(l).empty &&
+    finish_lookahead(l, WORD_FRAGMENT);
 }
 
 static inline bool scan_string(TSLexer *l, const bool *v) {

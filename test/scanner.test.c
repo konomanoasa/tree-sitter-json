@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "../src/scanner.c"
+#include "../src/tree_sitter/parser.h"
 
 #define COUNT(array) (sizeof(array) / sizeof((array)[0]))
 
@@ -52,6 +52,8 @@ init_mock_lexer(struct MockLexer *mock, const int32_t *input, size_t length) {
     .mark = SIZE_MAX,
   };
 }
+
+#include "../src/scanner.c"
 
 static void test_stateless_lifecycle_and_serialization(void) {
   enum { SENTINEL_BYTE = 0x5a };
