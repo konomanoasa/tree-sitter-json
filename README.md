@@ -16,8 +16,7 @@ npm install @konomanoasa/tree-sitter-json
 ## Development
 
 ```sh
-npm install
-npm run build
+npm ci
 npm test
 ```
 
